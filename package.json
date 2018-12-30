@@ -5,5 +5,8 @@
   "main": "index.js",
   "repository": "https://github.com/siriusdely/pilu",
   "author": "Sirius Dely <sirius@icloud.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer-core": "1.11.0"
+  }
 }
