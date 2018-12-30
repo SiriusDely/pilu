@@ -1,0 +1,9 @@
+{
+  "name": "pilu",
+  "version": "0.0.1",
+  "description": "PILU",
+  "main": "index.js",
+  "repository": "https://github.com/siriusdely/pilu",
+  "author": "Sirius Dely <sirius@icloud.com>",
+  "license": "MIT"
+}
