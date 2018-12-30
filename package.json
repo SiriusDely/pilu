@@ -7,6 +7,7 @@
   "author": "Sirius Dely <sirius@icloud.com>",
   "license": "MIT",
   "dependencies": {
+    "cheerio": "1.0.0-rc.2",
     "puppeteer-core": "1.11.0"
   }
 }
