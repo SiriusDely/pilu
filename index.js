@@ -62,6 +62,7 @@ const TABLE_TITLE = 'Rincian Perolehan Suara'.toLowerCase();
   console.log('provinces: ', provinces);
 
   for (let p = 0; p < provinces.length; p++) {
+    // if (p > 0) { continue; }
     let province = provinces[p];
     console.log('province: ', JSON.stringify(province));
 
@@ -89,13 +90,16 @@ const TABLE_TITLE = 'Rincian Perolehan Suara'.toLowerCase();
         // console.log('tr: ', $tr.text());
         const tds = $tr.find('td');
         const tdsLength = tds.length;
-        if (titleFound && rowLength === 0 && tdsLength > 0) {
+        if (titleFound && rowLength === 0 && tdsLength > 0 && i < 2) {
           rowLength = tdsLength;
           titleFound = false;
           // console.log(`${i+1}.${j+1} rowLength: ${rowLength} headerLength: ${headerLength}`);
         } else {
           // console.log(`${i+1}.${j+1} tdsLength: ${tdsLength} headerLength: ${headerLength}`);
-
+          if (titleFound && rowLength === 0 && tdsLength > 0 && i >= 2) {
+            rowLength = tdsLength;
+            titleFound = false;
+          }
           if (tdsLength > 1 && tdsLength >= headerLength) {
             const row = tds.map((k, td) => {
               const $td = $(td);
@@ -201,8 +205,8 @@ const TABLE_TITLE = 'Rincian Perolehan Suara'.toLowerCase();
       console.log(csvFilename + ' saved');
     });
 
-    await page.screenshot({ path: 'png/' + `${p + 1}. ${province.name}.png`, fullPage: true });
-    await page.pdf({ path: 'pdf/' + `${p + 1}. ${province.name}.pdf`, format: 'A4' });
+    // await page.screenshot({ path: 'png/' + `${p + 1}. ${province.name}.png`, fullPage: true });
+    // await page.pdf({ path: 'pdf/' + `${p + 1}. ${province.name}.pdf`, format: 'A4' });
   }
   await browser.close();
 })();
