@@ -2,6 +2,7 @@
 
 const puppeteer = require('puppeteer-core');
 const cheerio = require('cheerio');
+const fs = require('fs');
 
 const TABLE_TITLE = 'Rincian Perolehan Suara'.toLowerCase();
 
@@ -60,116 +61,148 @@ const TABLE_TITLE = 'Rincian Perolehan Suara'.toLowerCase();
   }).get();
   console.log('provinces: ', provinces);
 
-  let province = provinces[0];
-  page.select('select[name=wilayah_id]', province.id).then(result => {
-    console.log('result: ', result);
-  }).catch(err => {
-    console.log('err: ', err);
-  });
-  await page.waitFor('div#infoboks');
+  for (let p = 0; p < provinces.length; p++) {
+    let province = provinces[p];
+    console.log('province: ', JSON.stringify(province));
 
-  html = await page.content();
-  // console.log('HTML: ', html);
-  $ = cheerio.load(html);
+    page.select('select[name=wilayah_id]', province.id).then(result => {
+      // console.log('result: ', result);
+    }).catch(err => {
+      console.log('err: ', err);
+    });
+    await page.waitFor('div#infoboks');
+    await page.waitFor(3*1000);
 
-  const tablesArray = [];
-  const tablesLength = $('#daftartps table').each((i, table) => {
-    let titleFound = false, headersProcessed = false, headerLength = 0, rowLength = 0;
+    html = await page.content();
+    // console.log('HTML: ', html);
+    $ = cheerio.load(html);
 
-    let tableObj = null;
-    const $table = $(table);
-    $table.find('tbody tr').each((j, tr) => {
-      const $tr = $(tr);
-      // console.log('tr: ', $tr.text());
-      const tds = $tr.find('td');
-      const tdsLength = tds.length;
-      if (titleFound && rowLength === 0 && tdsLength > 0) {
-        rowLength = tdsLength;
-        titleFound = false;
-        console.log(`${i+1}.${j+1} rowLength: ${rowLength} headerLength: ${headerLength}`);
-      } else {
-        console.log(`${i+1}.${j+1} tdsLength: ${tdsLength} headerLength: ${headerLength}`);
+    const tablesArray = [];
+    const tablesLength = $('#daftartps table').each((i, table) => {
+      let titleFound = false, headersProcessed = false, headerLength = 0, rowLength = 0;
 
-        if (tdsLength > 1 && tdsLength >= headerLength) {
-          const row = tds.map((k, td) => {
-            const $td = $(td);
-            return $td.text().trim();
-          }).get();
-          // console.log('row: ', row);
-          let rowTitle = '<EMPTY>';
-          let rowSubtitle = '<EMPTY>';
-          if (tdsLength > headerLength) {
-            rowTitle = row[1];
-            rowSubtitle = row[2];
-          } else if (rowLength > headerLength) {
-            rowSubtitle = row[1];
-          } else {
-            rowTitle = row[1];
-          }
-          console.log(`rowTitle: ${rowTitle} rowSubtitle: ${rowSubtitle} rowLength: ${rowLength} headerLength: ${headerLength}`);
-        }
-      }
+      let tableObj = null;
+      const $table = $(table);
+      let rowTitleFound = null;
+      $table.find('tbody tr').each((j, tr) => {
+        const $tr = $(tr);
+        // console.log('tr: ', $tr.text());
+        const tds = $tr.find('td');
+        const tdsLength = tds.length;
+        if (titleFound && rowLength === 0 && tdsLength > 0) {
+          rowLength = tdsLength;
+          titleFound = false;
+          // console.log(`${i+1}.${j+1} rowLength: ${rowLength} headerLength: ${headerLength}`);
+        } else {
+          // console.log(`${i+1}.${j+1} tdsLength: ${tdsLength} headerLength: ${headerLength}`);
 
-      let thsLength = 0;
-      if (tds.length === 0) {
-        const ths = $tr.find('th');
-        thsLength = ths.length;
-        console.log(`${i+1}.${j+1}   thsLength: ${thsLength}`);
-        const headers = [];
-        ths.each((k, th) => {
-          const $th = $(th);
-          const text = $th.text();
-          const processedText = text.trim().toLowerCase();
-          if (processedText === TABLE_TITLE ||
-            processedText === 'Rincian'.toLowerCase()) {
-
-            console.log(`${i+1}.${j+1}.${k+1} TABLE_TITLE: ${text}`);
-            titleFound = true;
-            headersProcessed = false;
-            headerLength = 0;
-            rowLength = 0;
-
-            tableObj = {};
-          } else if (titleFound && !headersProcessed) {
-            if (k <= 0 && text.trim().length <= 4) {
-            } else if (k === 1) {
-              console.log(`${i+1}.${j+1}.${k+1} headerTitle: ${text}`);
-              tableObj['title'] = text.trim();
-
-              console.log('table: ', tableObj);
-              tablesArray.push(tableObj);
+          if (tdsLength > 1 && tdsLength >= headerLength) {
+            const row = tds.map((k, td) => {
+              const $td = $(td);
+              return $td.text().trim();
+            }).get();
+            // console.log('row: ', row);
+            let rowTitle = null;
+            let rowSubtitle = null;
+            let r = 0;
+            if (tdsLength > headerLength) {
+              r++;
+              rowTitleFound = rowTitle = row[r];
+              r++;
+              rowSubtitle = row[r];
+            } else if (rowLength > headerLength) {
+              r++;
+              rowSubtitle = row[r];
             } else {
-              console.log(`${i+1}.${j+1}.${k+1} header: ${text}`);
+              r++;
+              rowTitleFound = rowTitle = row[r];
             }
-            headers.push(text.trim());
-          }
-        });
-
-        if (titleFound && !headersProcessed) {
-          // headerLength = headers.length;
-          headerLength = thsLength;
-
-          console.log('headers: ', headers);
-          if (headers.length && headers[headers.length - 1].toLowerCase() !== 'Jumlah Akhir'.toLowerCase()) {
-            headerLength += 1;
+            const finalRowTitle = rowSubtitle ? `${rowTitleFound} (${rowSubtitle})` : rowTitleFound;
+            // console.log(`finalRowTitle: ${finalRowTitle} rowTitleFound: ${rowTitleFound} rowTitle: ${rowTitle} rowSubtitle: ${rowSubtitle} rowLength: ${rowLength} headerLength: ${headerLength}`);
+            const data = row.slice(r + 1);
+            // console.log('data: ' + data.length, data);
+            tableObj.data.push([ finalRowTitle, ...data.map(d => parseInt(d))]);
           }
         }
-      }
 
-      if (titleFound && headersProcessed) {
-        headersProcessed = false;
-      }
+        let thsLength = 0;
+        if (tds.length === 0) {
+          const ths = $tr.find('th');
+          thsLength = ths.length;
+          // console.log(`${i+1}.${j+1}   thsLength: ${thsLength}`);
+          const headers = [];
+          ths.each((k, th) => {
+            const $th = $(th);
+            const text = $th.text();
+            const trimmedText = text.trim();
+            const processedText = trimmedText.toLowerCase();
+            if (processedText === TABLE_TITLE ||
+              processedText === 'Rincian'.toLowerCase()) {
+
+              // console.log(`${i+1}.${j+1}.${k+1} TABLE_TITLE: ${trimmedText}`);
+              titleFound = true;
+              headersProcessed = false;
+              headerLength = 0;
+              rowLength = 0;
+
+              tableObj = { title: '', data: [] };
+            } else if (titleFound && !headersProcessed && thsLength >= 2) {
+              if (k <= 0 && trimmedText.length <= 4) {
+              } else if (k === 1) {
+                // console.log(`${i+1}.${j+1}.${k+1} headerTitle: ${trimmedText}`);
+                tableObj.title = trimmedText;
+
+                // console.log('table with title: ', tableObj);
+                tablesArray.push(tableObj);
+                headers.push(province.name);
+              } else {
+                // console.log(`${i+1}.${j+1}.${k+1} header: ${trimmedText}`);
+                headers.push(trimmedText);
+              }
+            }
+          });
+
+          if (titleFound && !headersProcessed && headers.length >= 2) {
+            // headerLength = headers.length;
+            headerLength = thsLength;
+
+            if (headers.length && headers[headers.length - 1].toLowerCase() !== 'Jumlah Akhir'.toLowerCase()) {
+              headers.push('Jumlah Akhir');
+              headerLength += 1;
+            }
+            // console.log('headers: ', headers);
+
+            if (i == 0) { tableObj.data.push(headers); }
+          }
+        }
+
+        if (titleFound && headersProcessed) {
+          headersProcessed = false;
+        }
+      });
+
+    }).length;
+
+    // console.log('tables: ', JSON.stringify(tablesArray));
+
+    province.tables = tablesArray;
+    // console.log('provinces: ', JSON.stringify(provinces));
+
+    const tablesCsv = tablesArray.map(table => {
+      return table.data.map(d => {
+        return d.join(',');
+      }).join('\n');
+    }).join('\n');
+
+    const csvData = new Uint8Array(Buffer.from(tablesCsv));
+    const csvFilename = `${p + 1}. ${province.name}.csv`;
+    fs.writeFile('csv/' + csvFilename, csvData, (err) => {
+      if (err) { throw err; }
+      console.log(csvFilename + ' saved');
     });
 
-  }).length;
-
-  console.log('tables: ', tablesArray);
-
-  province.tables = tablesArray;
-  console.log('provinces: ', JSON.stringify(provinces));
-
-  await page.screenshot({ path: 'pilu.png', fullPage: true });
-  await page.pdf({ path: 'pilu.pdf', format: 'A4' });
-
+    await page.screenshot({ path: 'png/' + `${p + 1}. ${province.name}.png`, fullPage: true });
+    await page.pdf({ path: 'pdf/' + `${p + 1}. ${province.name}.pdf`, format: 'A4' });
+  }
   await browser.close();
 })();

@@ -1,0 +1,40 @@
+BALI,JEMBRANA,TABANAN,BADUNG,GIANYAR,KLUNGKUNG,BANGLI,KARANGASEM,BULELENG,KOTA DENPASAR,Jumlah Akhir
+1. Jumlah pemilih terdaftar dalam Daftar Pemilih Tetap (DPT) (LK),109702,173329,171322,177704,75407,90484,189427,268580,204125,1460080
+1. Jumlah pemilih terdaftar dalam Daftar Pemilih Tetap (DPT) (PR),113030,179971,174886,181412,78317,90258,190556,268523,205249,1482202
+1. Jumlah pemilih terdaftar dalam Daftar Pemilih Tetap (DPT) (JML),222732,353300,346208,359116,153724,180742,379983,537103,409374,2942282
+2. Jumlah pemilih Terdaftar dalam Daftar Pemilih Tambahan (DPTb) (LK),59,244,994,133,149,196,279,189,1273,3516
+2. Jumlah pemilih Terdaftar dalam Daftar Pemilih Tambahan (DPTb) (PR),71,198,853,150,68,87,228,125,1314,3094
+2. Jumlah pemilih Terdaftar dalam Daftar Pemilih Tambahan (DPTb) (JML),130,442,1847,283,217,283,507,314,2587,6610
+3. Pemilih Terdaftar dalam daftar Pemilih Khusus (DPK) (LK),15,20,276,55,14,6,26,185,181,778
+3. Pemilih Terdaftar dalam daftar Pemilih Khusus (DPK) (PR),30,29,88,98,6,9,26,196,138,620
+3. Pemilih Terdaftar dalam daftar Pemilih Khusus (DPK) (JML),45,49,364,153,20,15,52,381,319,1398
+4. Pemilih Khusus Tambahan (DPKTb)/pengguna KTP dan KK/nama sejenis lainnya (LK),617,1282,3947,1008,433,352,817,2862,8983,20301
+4. Pemilih Khusus Tambahan (DPKTb)/pengguna KTP dan KK/nama sejenis lainnya (PR),751,1418,4269,1145,522,393,759,2882,9392,21531
+4. Pemilih Khusus Tambahan (DPKTb)/pengguna KTP dan KK/nama sejenis lainnya (JML),1368,2700,8216,2153,955,745,1576,5744,18375,41832
+5. Jumlah Pemilih (1+2+3+4+5) (LK),110393,174875,176539,178900,76003,91038,190549,271816,214562,1484675
+5. Jumlah Pemilih (1+2+3+4+5) (PR),113882,181616,180096,182805,78913,90747,191569,271726,216093,1507447
+5. Jumlah Pemilih (1+2+3+4+5) (JML),224275,356491,356635,361705,154916,181785,382118,543542,430655,2992122
+1. Pengguna hak pilih dalam DPT (LK),78146,145590,130235,144468,53707,72601,125391,170469,151120,1071727
+1. Pengguna hak pilih dalam DPT (PR),79063,146692,129060,143406,53061,67945,115772,160550,151220,1046769
+1. Pengguna hak pilih dalam DPT (JML),157209,292282,259295,287874,106768,140546,241163,331019,302340,2118496
+2. Pengguna hak pilih dalam Daftar Pemilih Tambahan(DPTb)/Pemilih dari TPS lain (LK),59,232,877,127,147,195,234,188,1236,3295
+2. Pengguna hak pilih dalam Daftar Pemilih Tambahan(DPTb)/Pemilih dari TPS lain (PR),70,187,801,148,62,86,179,124,1282,2939
+2. Pengguna hak pilih dalam Daftar Pemilih Tambahan(DPTb)/Pemilih dari TPS lain (JML),129,419,1678,275,209,281,413,312,2518,6234
+3. Pengguna hak pilih dalam Daftar Pemilih Khusus (DPK) (LK),6,3,77,34,10,3,15,103,89,340
+3. Pengguna hak pilih dalam Daftar Pemilih Khusus (DPK) (PR),15,4,37,63,5,8,18,99,70,319
+3. Pengguna hak pilih dalam Daftar Pemilih Khusus (DPK) (JML),21,7,114,97,15,11,33,202,159,659
+4. Pengguna hak pilih dalam Daftar Pemilih Khusus Tambahan (DPKTb)/pengguna KTP dan KK/Nama sejenis lainnya (LK),617,1282,3947,1008,433,352,817,2862,8983,20301
+4. Pengguna hak pilih dalam Daftar Pemilih Khusus Tambahan (DPKTb)/pengguna KTP dan KK/Nama sejenis lainnya (PR),751,1418,4269,1145,522,393,759,2882,9392,21531
+4. Pengguna hak pilih dalam Daftar Pemilih Khusus Tambahan (DPKTb)/pengguna KTP dan KK/Nama sejenis lainnya (JML),1368,2700,8216,2153,955,745,1576,5744,18375,41832
+5. Jumlah seluruh pengguna Hak Pilih (1+2+3+4) (LK),78828,147107,135136,145637,54297,73151,126457,173622,161428,1095663
+5. Jumlah seluruh pengguna Hak Pilih (1+2+3+4) (PR),79899,148301,134167,144762,53650,68432,116728,163655,161964,1071558
+5. Jumlah seluruh pengguna Hak Pilih (1+2+3+4) (JML),158727,295408,269303,290399,107947,141583,243185,337277,323392,2167221
+Jumlah surat suara yang diterima termasuk cadangan 2% (2+3+4),227397,360896,353389,366969,156989,184593,387969,548378,417998,3004578
+Jumlah surat suara dikembalikan oleh pemilih karena rusak/keliru coblos,62,88,90,602,41,145,112,231,196,1567
+Jumlah surat suara yang tidak digunakan,68608,65400,83996,75968,49001,42865,144672,210870,94410,835790
+Jumlah surat suara digunakan,158727,295408,269303,290399,107947,141583,243185,337277,323392,2167221
+Jumlah suara sah seluruh Calon Presiden dan Wakil Presiden,158079,293110,267283,287078,106752,139845,240624,335080,321500,2149351
+Jumlah Suara tidak sah,648,2298,2020,3321,1195,1738,2561,2197,1892,17870
+Jumlah suara sah dan tidak sah,158727,295408,269303,290399,107947,141583,243185,337277,323392,2167221
+Ir. H. Joko Widodo - Drs. H. M. Jusuf Kalla,104801,210896,189217,223125,70831,102528,159864,232228,241620,1535110
+Jumlah Suara Sah Calon Presiden dan Wakil Presiden,158079,293110,267283,287078,106752,139845,240624,335080,321500,2149351
