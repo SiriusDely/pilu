@@ -65,7 +65,7 @@ g.call(d3.axisBottom(x)
   .remove();
 
 d3.queue()
-  .defer(d3.json, './indonesia-topojson-city-regency.json')
+  .defer(d3.json, './json/indonesia-topojson-city-regency.json')
   .defer(d3.csv, './csv/ipm.csv', function(d) {
     ipm.set(d.nama_kabkota, Number(d.ipm / 10));
   })
