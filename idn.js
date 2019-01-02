@@ -32,7 +32,8 @@ g.append('rect')
   .on('click', handleOnClick);
 
 // d3.json('./json/indonesia-topojson-city-regency.json', function(err, idn) {
-d3.json('./json/indonesia.json', function(err, idn) {
+// d3.json('./json/indonesia.json', function(err, idn) {
+d3.json('./json/indonesia-provinces-cities-topo.json', function(err, idn) {
   if (err) { throw err; }
   console.log(idn);
 
@@ -40,7 +41,8 @@ d3.json('./json/indonesia.json', function(err, idn) {
     .attr('id', 'states')
     .selectAll('path')
     // .data(topojson.feature(idn, idn.objects.IDN_adm_2_kabkota).features)
-    .data(topojson.feature(idn, idn.objects.states_provinces).features)
+    // .data(topojson.feature(idn, idn.objects.states_provinces).features)
+    .data(topojson.feature(idn, idn.objects.provinces).features)
     .enter()
     .append('path')
     .attr('d', path)
@@ -48,7 +50,8 @@ d3.json('./json/indonesia.json', function(err, idn) {
 
   g.append('path')
     // .datum(topojson.mesh(idn, idn.objects.IDN_adm_2_kabkota), function(a, b) {
-    .datum(topojson.mesh(idn, idn.objects.states_provinces), function(a, b) {
+    // .datum(topojson.mesh(idn, idn.objects.states_provinces), function(a, b) {
+    .datum(topojson.mesh(idn, idn.objects.provinces), function(a, b) {
       return a !== b;
     })
     .attr('id', 'state-borders')
@@ -57,7 +60,8 @@ d3.json('./json/indonesia.json', function(err, idn) {
   // console.log('topojson provinces: ', topojson.feature(idn, idn.objects.states_provinces));
   // console.log('topojson places: ', topojson.feature(idn, idn.objects.places));
   g.selectAll('circle')
-    .data(topojson.feature(idn, idn.objects.places).features)
+    // .data(topojson.feature(idn, idn.objects.places).features)
+    .data(topojson.feature(idn, idn.objects.cities).features)
     .enter()
     .append('circle')
     .attr('cx', function(d) {
@@ -72,7 +76,7 @@ d3.json('./json/indonesia.json', function(err, idn) {
     .attr('class', 'place')
     .attr('d', path)
     .on('mouseover', function(d) {
-      d3.select('#place').text(d.properties.NAME);
+      d3.select('#place').text(d.properties.name);
       d3.select(this).attr('class', 'place hover');
     })
     .on('mouseout', function(d) {
