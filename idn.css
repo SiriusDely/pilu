@@ -1,3 +1,7 @@
+body {
+  font-family: 'Proxima Nova', 'Montserrat', sans-serif;
+}
+
 svg {
   outline: thin solid black;
 }
@@ -27,4 +31,13 @@ svg {
 #info {
   text-align: center;
   font-size: 48px;
+}
+
+#place {
+  text-align: center;
+  font-size: 24px;
+}
+
+.hover {
+  fill: steelblue;
 }

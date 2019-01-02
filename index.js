@@ -49,13 +49,13 @@ g.selectAll('rect')
   .attr('fill', function(d) { return color(d[0]); });
 
 g.append('text')
-.attr('class', 'caption')
-.attr('x', x.range()[0])
-.attr('y', 60)
-.attr('fill', '#000')
-.attr('text-anchor', 'start')
-.attr('font-weignt', 'bold')
-.text('Human Development Index: Indonesia');
+  .attr('class', 'caption')
+  .attr('x', x.range()[0])
+  .attr('y', 60)
+  .attr('fill', '#000')
+  .attr('text-anchor', 'start')
+  .attr('font-weignt', 'bold')
+  .text('Human Development Index: Indonesia');
 
 g.call(d3.axisBottom(x)
   .tickSize(13)

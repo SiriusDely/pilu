@@ -54,6 +54,51 @@ d3.json('./json/indonesia.json', function(err, idn) {
     .attr('id', 'state-borders')
     .attr('d', path);
 
+  // console.log('topojson provinces: ', topojson.feature(idn, idn.objects.states_provinces));
+  // console.log('topojson places: ', topojson.feature(idn, idn.objects.places));
+  g.selectAll('circle')
+    .data(topojson.feature(idn, idn.objects.places).features)
+    .enter()
+    .append('circle')
+    .attr('cx', function(d) {
+      // console.log(projection(d.geometry.coordinates));
+      return projection(d.geometry.coordinates)[0];
+    })
+    .attr('cy', function(d) {
+      return projection(d.geometry.coordinates)[1];
+    })
+    .attr('r', '3')
+    .attr('fill', '#666')
+    .attr('class', 'place')
+    .attr('d', path)
+    .on('mouseover', function(d) {
+      d3.select('#place').text(d.properties.NAME);
+      d3.select(this).attr('class', 'place hover');
+    })
+    .on('mouseout', function(d) {
+      d3.select('#place').text('');
+      d3.select(this).attr('class', 'place');
+    })
+    ;
+
+  /*
+  g.selectAll('path')
+    .data(topojson.feature(idn, idn.objects.places).features)
+    .enter()
+    .append('path')
+    .attr('fill', '#666')
+    .attr('class', 'place')
+    .attr('d', path)
+    .on('mouseover', function(d) {
+      d3.select('#place').text(d.properties.NAME);
+      d3.select(this).attr('class', 'place hover');
+    })
+    .on('mouseout', function(d) {
+      d3.select('#place').text('');
+      d3.select(this).attr('class', 'place');
+    })
+  ;
+  */
 });
 
 function handleOnClick(d) {
