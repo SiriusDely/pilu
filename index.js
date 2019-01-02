@@ -65,7 +65,7 @@ g.call(d3.axisBottom(x)
   .remove();
 
 d3.queue()
-  .defer(d3.json, './json/indonesia-topojson-city-regency.json')
+  .defer(d3.json, './json/indonesia-provinces-regencies-topo.json')
   .defer(d3.csv, './csv/ipm.csv', function(d) {
     ipm.set(d.nama_kabkota, Number(d.ipm / 10));
   })
@@ -85,14 +85,14 @@ function processData(err, idn) {
   g.append('g')
     .attr('id', 'subunits')
     .selectAll('path')
-    .data(topojson.feature(idn, idn.objects.IDN_adm_2_kabkota).features)
+    .data(topojson.feature(idn, idn.objects.regencies).features)
     .enter().append('path')
     .attr('fill', function(d) {
-      var key = d.properties.NAME_2;
-      key = d.properties.VARNAME_2 ? d.properties.VARNAME_2 : key;
+      var key = d.properties.name;
+      key = d.properties.nameAlt ? d.properties.nameAlt: key;
       if (!ipm.get(key)) {
-        key = d.properties.NAME_2;
-        console.log(d.properties.VARNAME_2, key);
+        key = d.properties.name;
+        console.log(d.properties.nameAlt, key);
       }
 
       return color(d.ipm = ipm.get(key));
@@ -102,7 +102,7 @@ function processData(err, idn) {
     .on('click', handleOnClick);
 
   g.append('path')
-    .datum(topojson.mesh(idn, idn.objects.IDN_adm_2_kabkota), function(a, b) {
+    .datum(topojson.mesh(idn, idn.objects.regencies), function(a, b) {
       return a !== b;
     })
     .attr('id', 'state-borders')
@@ -111,13 +111,13 @@ function processData(err, idn) {
 };
 
 function getName(region) {
-  return region.properties.NAME_1.toUpperCase() + ': ' + region.properties.NAME_2.toUpperCase();
+  return region.properties.province.toUpperCase() + ': ' + region.properties.name.toUpperCase();
 }
 
 function getIpm(region) {
-  var key = region.properties.NAME_2;
+  var key = region.properties.name;
   if (ipm.get(key)) { return (ipm.get(key) * 10).toPrecision(4); }
-  key = region.properties.VARNAME_2;
+  key = region.properties.nameAlt;
   if (ipm.get(key)) { return (ipm.get(key) * 10).toPrecision(4); }
 
   return 'no data';
