@@ -92,7 +92,7 @@ function processData(err, idn) {
       key = d.properties.nameAlt ? d.properties.nameAlt: key;
       if (!ipm.get(key)) {
         key = d.properties.name;
-        console.log(d.properties.nameAlt, key);
+        console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
 
       return color(d.ipm = ipm.get(key));

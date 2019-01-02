@@ -16,7 +16,7 @@ const writeFile = util.promisify(fs.writeFile);
     return {
       type: g.type,
       properties: {
-        id: g.properties['ID_0'],
+        id: g.properties['ID_2'],
         name: g.properties['NAME_2'],
         nameAlt: g.properties['VARNAME_2'],
         provinceId: g.properties['ID_1'],
