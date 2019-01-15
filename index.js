@@ -7,10 +7,6 @@ var ipm = d3.map();
 
 var avgIpm = 0;
 
-var color = d3.scaleThreshold()
-  .domain(d3.range(2, 10))
-  .range(d3.schemeGreens[9]);
-
 var projection = d3.geoEquirectangular()
   .scale(1050)
   .rotate([-120, 0])
@@ -31,52 +27,75 @@ svg.append('rect')
 
 var g = svg.append('g');
 
-var x = d3.scaleLinear()
-  .domain([1, 10])
-  .rangeRound([600, 860]);
-
-g.selectAll('rect')
-  .data(color.range().map(function(d) {
-    d = color.invertExtent(d);
-    if (d[0] == null) { d[0] = x.domain()[0]; }
-    if (d[1] == null) { d[1] = x.domain()[1]; }
-    return d;
-  }))
-  .enter().append('rect')
-  .attr('height', 8)
-  .attr('x', function(d) { return x(d[0]); })
-  .attr('width', function(d) { return x(d[1]) - x(d[0]); })
-  .attr('fill', function(d) { return color(d[0]); });
-
-g.append('text')
-  .attr('class', 'caption')
-  .attr('x', x.range()[0])
-  .attr('y', 60)
-  .attr('fill', '#000')
-  .attr('text-anchor', 'start')
-  .attr('font-weignt', 'bold')
-  .text('Human Development Index: Indonesia');
-
-g.call(d3.axisBottom(x)
-  .tickSize(13)
-  .tickFormat(function(x, i) { return x + '0'; })
-  .tickValues(color.domain()))
-  .select('.domain')
-  .remove();
-
 d3.queue()
   .defer(d3.json, './json/indonesia-provinces-regencies-topo.json')
-  .defer(d3.csv, './csv/ipm.csv', function(d) {
-    ipm.set(d.nama_kabkota, Number(d.ipm / 10));
-  })
-  .await(processData);
+  .defer(d3.csv, './csv/ipm.csv')
+  .await(processMap);
 
-function processData(err, idn) {
+function processMap(err, idn, hdi) {
   if (err) { throw err; }
+
+  hdi.forEach(function(d) {
+    ipm.set(d.nama_kabkota, Number(d.ipm));
+  });
+
+  var maxIpm = d3.max(hdi, function(d) {
+    return +d.ipm;
+  });
+  var minIpm = d3.min(hdi, function(d) {
+    return +d.ipm;
+  });
+
+  var stepIpm = (maxIpm - minIpm) / 9;
+
+  console.log('maxIpm: ', maxIpm);
+  console.log('minIpm: ', minIpm);
+  var maxScale = Math.round(maxIpm / 10) * 10;
+  var minScale = Math.round(minIpm / 10) * 10;
+  console.log('maxScale: ', maxScale);
+  console.log('minScale: ', minScale);
+
+  var color = d3.scaleThreshold()
+    .domain(d3.range(2, 10))
+    .range(d3.schemeBlues[9]);
+
+  var color2 = d3.scaleSequential(d3.interpolateRdBu)
+  .domain([minIpm, maxIpm]);
+
+  var x = d3.scaleLinear()
+    .domain([1, 10])
+    .rangeRound([600, 860]);
+
+  var x2 = d3.scaleLinear()
+    .domain([minIpm, maxIpm])
+    .rangeRound([600, 860]);
+
+  g.selectAll("rect")
+    .data(d3.range(600, 860), function(d) { return d; })
+    .enter().append("rect")
+    .attr("x", function(d) { return d; })
+    .attr("height", 8)
+    .attr("width", 1)
+    .style("fill", function(d) { return color2(x2.invert(d)); })
+
+  g.call(d3.axisBottom(x2)
+    .ticks(9)
+    .tickSize(13))
+    .select('.domain')
+    .remove();
+
+  g.append('text')
+    .attr('class', 'caption')
+    .attr('x', x.range()[0])
+    .attr('y', 60)
+    .attr('fill', '#000')
+    .attr('text-anchor', 'start')
+    .attr('font-weignt', 'bold')
+    .text('Human Development Index: Indonesia');
 
   // Calculate average IPM
   ipm.each(function(d) {
-    avgIpm += Number(d) * 10;
+    avgIpm += Number(d);
   });
   avgIpm = (avgIpm / ipm.size()).toPrecision(4);
 
@@ -95,7 +114,7 @@ function processData(err, idn) {
         console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
 
-      return color(d.ipm = ipm.get(key));
+      return color2(d.ipm = ipm.get(key));
     })
     .attr('d', path)
     .text(function(d) { return d.ipm + '%'; })
@@ -116,9 +135,9 @@ function getName(region) {
 
 function getIpm(region) {
   var key = region.properties.name;
-  if (ipm.get(key)) { return (ipm.get(key) * 10).toPrecision(4); }
+  if (ipm.get(key)) { return ipm.get(key).toPrecision(4); }
   key = region.properties.nameAlt;
-  if (ipm.get(key)) { return (ipm.get(key) * 10).toPrecision(4); }
+  if (ipm.get(key)) { return ipm.get(key).toPrecision(4); }
 
   return 'no data';
 }
