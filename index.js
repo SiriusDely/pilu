@@ -65,12 +65,17 @@ function handleColumnOnChange() {
   avgIpm = (avgIpm / mapIpm.size()).toPrecision(4);
 
   var details = `${title} (Average): ${avgIpm}`;
-  document.getElementById('info-details').innerHTML = details;
+  // document.getElementById('info-details').innerHTML = details;
+  d3.select('#info-details')
+    .text(details);
 
   g.select('.caption')
     .text(`${title}: Indonesia`);
 
+  var duration = 1000;
+
   g.selectAll('.subunit')
+    .transition().duration(duration)
     .attr('fill', function(d) {
       var key = d.properties.name;
       key = d.properties.nameAlt ? d.properties.nameAlt: key;
@@ -84,9 +89,12 @@ function handleColumnOnChange() {
 
   g.selectAll(".bar")
     .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
+    .transition().duration(duration)
     .style("fill", function(d) { return color(x.invert(d)); })
 
-  g.call(d3.axisBottom(x)
+  g
+    .transition().duration(duration)
+    .call(d3.axisBottom(x)
     .ticks(9)
     .tickSize(13)
   )
@@ -186,7 +194,9 @@ function processMap(err, idn2, hdi2) {
   avgIpm = (avgIpm / mapIpm.size()).toPrecision(4);
 
   var details = `${title} (Average): ${avgIpm}`;
-  document.getElementById('info-details').innerHTML = details;
+  // document.getElementById('info-details').innerHTML = details;
+  d3.select('#info-details')
+    .text(details);
 
   subunits = g.append('g')
     .attr('id', 'subunits')
@@ -251,8 +261,12 @@ function handleOnClick(d) {
     details = `${title} (Average): ${avgIpm}`;
   }
 
-  document.getElementById('info-location').innerHTML = location;
-  document.getElementById('info-details').innerHTML = details;
+  // document.getElementById('info-location').innerHTML = location;
+  // document.getElementById('info-details').innerHTML = details;
+  d3.select('#info-location')
+    .text(location);
+  d3.select('#info-details')
+    .text(details);
 
   g.selectAll('path')
     .classed('active', centered && function(d) {
