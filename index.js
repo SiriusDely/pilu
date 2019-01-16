@@ -16,15 +16,24 @@ var interpolators = [
   'interpolateSpectral',
 ];
 
+var titles = [
+  'Human Development Index',
+  'Per-Capita Expenditure',
+  'Life Expectancy',
+  'Literacy Rate',
+  'Duration of Education'
+];
+
 d3.select('#columns')
   .on('change', handleColumnOnChange)
   .selectAll('option')
-  .data(columns)
+  .data(d3.range(0, 5))
   .enter().append('option')
-  .attr('value', function(d) { return d; })
-  .text(function(d) { return d; });
+  .attr('value', function(d) { return columns[d]; })
+  .text(function(d) { return titles[d]; });
 
 var column = columns[selectedIdx];
+var title = titles[selectedIdx];
 
 var subunits;
 
@@ -33,6 +42,7 @@ function handleColumnOnChange() {
 
   selectedIdx = this.selectedIndex;
   column = columns[selectedIdx];
+  title = titles[selectedIdx];
 
   hdi.forEach(function(d) {
     mapIpm.set(d.nama_kabkota, Number(d[column]));
@@ -47,6 +57,18 @@ function handleColumnOnChange() {
 
   var interpolator = interpolators[selectedIdx];
   color.interpolator(d3[interpolator]);
+
+  avgIpm = 0;
+  mapIpm.each(function(d) {
+    avgIpm += Number(d);
+  });
+  avgIpm = (avgIpm / mapIpm.size()).toPrecision(4);
+
+  var details = `${title} (Average): ${avgIpm}`;
+  document.getElementById('info-details').innerHTML = details;
+
+  g.select('.caption')
+    .text(`${title}: Indonesia`);
 
   g.selectAll('.subunit')
     .attr('fill', function(d) {
@@ -155,7 +177,7 @@ function processMap(err, idn2, hdi2) {
     .attr('fill', '#000')
     .attr('text-anchor', 'start')
     .attr('font-weignt', 'bold')
-    .text('Human Development Index: Indonesia');
+    .text(`${title}: Indonesia`);
 
   // Calculate average IPM
   mapIpm.each(function(d) {
@@ -163,7 +185,8 @@ function processMap(err, idn2, hdi2) {
   });
   avgIpm = (avgIpm / mapIpm.size()).toPrecision(4);
 
-  document.getElementById('info-details').innerHTML = 'Human Development Index (Average): ' + avgIpm;
+  var details = `${title} (Average): ${avgIpm}`;
+  document.getElementById('info-details').innerHTML = details;
 
   subunits = g.append('g')
     .attr('id', 'subunits')
@@ -210,22 +233,26 @@ function getIpm(region) {
 function handleOnClick(d) {
   var x, y, k;
 
+  var location, details;
   if (d && centered !== d) {
     var centroid = path.centroid(d);
     x = centroid[0];
     y = centroid[1];
     k = 4;
     centered = d;
-    document.getElementById('info-location').innerHTML = getName(d);
-    document.getElementById('info-details').innerHTML = 'Human Development Index: ' + getIpm(d);
+    location = getName(d);
+    details = `${title}: ${getIpm(d)}`;
   } else {
     x = width / 2;
     y = height / 2;
     k = 1;
     centered = null;
-    document.getElementById('info-location').innerHTML = 'INDONESIA';
-    document.getElementById('info-details').innerHTML = 'Human Development Index (Average): ' + avgIpm;
+    location = 'INDONESIA';
+    details = `${title} (Average): ${avgIpm}`;
   }
+
+  document.getElementById('info-location').innerHTML = location;
+  document.getElementById('info-details').innerHTML = details;
 
   g.selectAll('path')
     .classed('active', centered && function(d) {
