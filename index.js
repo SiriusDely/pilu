@@ -1,9 +1,83 @@
+var selectedIdx = 0;
+
+var columns = [
+  'ipm',
+  'pengeluaran_perkapita',
+  'angka_harapan_hidup',
+  'angka_melek_huruf',
+  'lama_sekolah',
+];
+
+var interpolators = [
+  'interpolateRdBu',
+  'interpolateGnBu',
+  'interpolateBlues',
+  'interpolateRdYlBu',
+  'interpolateSpectral',
+];
+
+d3.select('#columns')
+  .on('change', handleColumnOnChange)
+  .selectAll('option')
+  .data(columns)
+  .enter().append('option')
+  .attr('value', function(d) { return d; })
+  .text(function(d) { return d; });
+
+var column = columns[selectedIdx];
+
+var subunits;
+
+function handleColumnOnChange() {
+  console.log(this.selectedIndex, columns[this.selectedIndex]);
+
+  selectedIdx = this.selectedIndex;
+  column = columns[selectedIdx];
+
+  hdi.forEach(function(d) {
+    mapIpm.set(d.nama_kabkota, Number(d[column]));
+  });
+
+  var extentIpm = d3.extent(hdi, function(d) {
+    return +d[column];
+  });
+
+  color.domain(extentIpm);
+  x.domain(extentIpm);
+
+  var interpolator = interpolators[selectedIdx];
+  color.interpolator(d3[interpolator]);
+
+  g.selectAll('.subunit')
+    .attr('fill', function(d) {
+      var key = d.properties.name;
+      key = d.properties.nameAlt ? d.properties.nameAlt: key;
+      if (!mapIpm.get(key)) {
+        key = d.properties.name;
+        // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
+      }
+      return color(d[column] = mapIpm.get(key));
+    })
+  ;
+
+  g.selectAll(".bar")
+    .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
+    .style("fill", function(d) { return color(x.invert(d)); })
+
+  g.call(d3.axisBottom(x)
+    .ticks(9)
+    .tickSize(13)
+  )
+    .select('.domain')
+    .remove();
+}
+
 var width = 960,
   height = 500;
 
 var centered;
 
-var ipm = d3.map();
+var mapIpm = d3.map();
 
 var avgIpm = 0;
 
@@ -27,60 +101,50 @@ svg.append('rect')
 
 var g = svg.append('g');
 
+var extentLegend = [600, 860];
+
+var interpolator = interpolators[selectedIdx];
+var color = d3.scaleSequential(d3[interpolator]);
+var x = d3.scaleLinear()
+  .rangeRound(extentLegend);
+
+var idn, hdi;
+
 d3.queue()
   .defer(d3.json, './json/indonesia-provinces-regencies-topo.json')
   .defer(d3.csv, './csv/ipm.csv')
   .await(processMap);
 
-function processMap(err, idn, hdi) {
+function processMap(err, idn2, hdi2) {
   if (err) { throw err; }
 
+  idn = idn2;
+  hdi = hdi2;
+
   hdi.forEach(function(d) {
-    ipm.set(d.nama_kabkota, Number(d.ipm));
+    mapIpm.set(d.nama_kabkota, Number(d[column]));
   });
 
-  var maxIpm = d3.max(hdi, function(d) {
-    return +d.ipm;
-  });
-  var minIpm = d3.min(hdi, function(d) {
-    return +d.ipm;
+  var extentIpm = d3.extent(hdi, function(d) {
+    return +d[column];
   });
 
-  var stepIpm = (maxIpm - minIpm) / 9;
+  color.domain(extentIpm);
+  x.domain(extentIpm);
 
-  console.log('maxIpm: ', maxIpm);
-  console.log('minIpm: ', minIpm);
-  var maxScale = Math.round(maxIpm / 10) * 10;
-  var minScale = Math.round(minIpm / 10) * 10;
-  console.log('maxScale: ', maxScale);
-  console.log('minScale: ', minScale);
-
-  var color = d3.scaleThreshold()
-    .domain(d3.range(2, 10))
-    .range(d3.schemeBlues[9]);
-
-  var color2 = d3.scaleSequential(d3.interpolateRdBu)
-  .domain([minIpm, maxIpm]);
-
-  var x = d3.scaleLinear()
-    .domain([1, 10])
-    .rangeRound([600, 860]);
-
-  var x2 = d3.scaleLinear()
-    .domain([minIpm, maxIpm])
-    .rangeRound([600, 860]);
-
-  g.selectAll("rect")
-    .data(d3.range(600, 860), function(d) { return d; })
+  g.selectAll(".bar")
+    .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
     .enter().append("rect")
+    .attr('class', 'bar')
     .attr("x", function(d) { return d; })
     .attr("height", 8)
     .attr("width", 1)
-    .style("fill", function(d) { return color2(x2.invert(d)); })
+    .style("fill", function(d) { return color(x.invert(d)); })
 
-  g.call(d3.axisBottom(x2)
+  g.call(d3.axisBottom(x)
     .ticks(9)
-    .tickSize(13))
+    .tickSize(13)
+  )
     .select('.domain')
     .remove();
 
@@ -94,30 +158,31 @@ function processMap(err, idn, hdi) {
     .text('Human Development Index: Indonesia');
 
   // Calculate average IPM
-  ipm.each(function(d) {
+  mapIpm.each(function(d) {
     avgIpm += Number(d);
   });
-  avgIpm = (avgIpm / ipm.size()).toPrecision(4);
+  avgIpm = (avgIpm / mapIpm.size()).toPrecision(4);
 
   document.getElementById('info-details').innerHTML = 'Human Development Index (Average): ' + avgIpm;
 
-  g.append('g')
+  subunits = g.append('g')
     .attr('id', 'subunits')
     .selectAll('path')
     .data(topojson.feature(idn, idn.objects.regencies).features)
     .enter().append('path')
+    .attr('class', 'subunit')
     .attr('fill', function(d) {
       var key = d.properties.name;
       key = d.properties.nameAlt ? d.properties.nameAlt: key;
-      if (!ipm.get(key)) {
+      if (!mapIpm.get(key)) {
         key = d.properties.name;
-        console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
+        // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
 
-      return color2(d.ipm = ipm.get(key));
+      return color(d[column] = mapIpm.get(key));
     })
     .attr('d', path)
-    .text(function(d) { return d.ipm + '%'; })
+    .text(function(d) { return d[column] + '%'; })
     .on('click', handleOnClick);
 
   g.append('path')
@@ -135,9 +200,9 @@ function getName(region) {
 
 function getIpm(region) {
   var key = region.properties.name;
-  if (ipm.get(key)) { return ipm.get(key).toPrecision(4); }
+  if (mapIpm.get(key)) { return mapIpm.get(key).toPrecision(4); }
   key = region.properties.nameAlt;
-  if (ipm.get(key)) { return ipm.get(key).toPrecision(4); }
+  if (mapIpm.get(key)) { return mapIpm.get(key).toPrecision(4); }
 
   return 'no data';
 }
