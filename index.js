@@ -25,7 +25,7 @@ var titles = [
 ];
 
 d3.select('#columns')
-  .on('change', handleColumnOnChange)
+  .on('change', update)
   .selectAll('option')
   .data(d3.range(0, 5))
   .enter().append('option')
@@ -35,37 +35,23 @@ d3.select('#columns')
 var column = columns[selectedIdx];
 var title = titles[selectedIdx];
 
-var subunits;
-
-function handleColumnOnChange() {
-  console.log(this.selectedIndex, columns[this.selectedIndex]);
+function update() {
 
   selectedIdx = this.selectedIndex;
   column = columns[selectedIdx];
   title = titles[selectedIdx];
 
-  hdi.forEach(function(d) {
-    mapIpm.set(d.nama_kabkota, Number(d[column]));
-  });
+  extent = extents[selectedIdx];
 
-  var extentIpm = d3.extent(hdi, function(d) {
-    return +d[column];
-  });
-
-  color.domain(extentIpm);
-  x.domain(extentIpm);
+  color.domain(extent);
+  x.domain(extent);
 
   var interpolator = interpolators[selectedIdx];
   color.interpolator(d3[interpolator]);
 
-  avgIpm = 0;
-  mapIpm.each(function(d) {
-    avgIpm += Number(d);
-  });
-  avgIpm = (avgIpm / mapIpm.size()).toPrecision(4);
+  average = averages[selectedIdx];
 
-  var details = `${title} (Average): ${avgIpm}`;
-  // document.getElementById('info-details').innerHTML = details;
+  var details = `${title} (Average): ${average}`;
   d3.select('#info-details')
     .text(details);
 
@@ -79,11 +65,11 @@ function handleColumnOnChange() {
     .attr('fill', function(d) {
       var key = d.properties.name;
       key = d.properties.nameAlt ? d.properties.nameAlt: key;
-      if (!mapIpm.get(key)) {
+      if (!map.get(key)) {
         key = d.properties.name;
         // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
-      return color(d[column] = mapIpm.get(key));
+      return color(d[column] = +map.get(key)[column]);
     })
   ;
 
@@ -92,13 +78,13 @@ function handleColumnOnChange() {
     .transition().duration(duration)
     .style("fill", function(d) { return color(x.invert(d)); })
 
-  g
-    .transition().duration(duration)
+  g.transition().duration(duration)
     .call(d3.axisBottom(x)
     .ticks(9)
     .tickSize(13)
   )
     .select('.domain')
+    // .transition().duration(duration)
     .remove();
 }
 
@@ -107,9 +93,9 @@ var width = 960,
 
 var centered;
 
-var mapIpm = d3.map();
+var map = d3.map();
 
-var avgIpm = 0;
+var average = 0;
 
 var projection = d3.geoEquirectangular()
   .scale(1050)
@@ -132,35 +118,52 @@ svg.append('rect')
 var g = svg.append('g');
 
 var extentLegend = [600, 860];
+var extents = new Array(5);
+var extent;
+
+var averages = Array.apply(null, Array(5)).map(function() { return 0 });
+var average;
 
 var interpolator = interpolators[selectedIdx];
 var color = d3.scaleSequential(d3[interpolator]);
 var x = d3.scaleLinear()
   .rangeRound(extentLegend);
 
-var idn, hdi;
-
 d3.queue()
   .defer(d3.json, './json/indonesia-provinces-regencies-topo.json')
   .defer(d3.csv, './csv/ipm.csv')
-  .await(processMap);
+  .await(init);
 
-function processMap(err, idn2, hdi2) {
+function init(err, idn, hdi) {
   if (err) { throw err; }
 
-  idn = idn2;
-  hdi = hdi2;
-
   hdi.forEach(function(d) {
-    mapIpm.set(d.nama_kabkota, Number(d[column]));
+    map.set(d.nama_kabkota, d);
   });
 
-  var extentIpm = d3.extent(hdi, function(d) {
-    return +d[column];
+  // Calculate average IPM
+  map.each(function(d) {
+    for (var i=0; i<5; i++) {
+      var column1 = columns[i];
+      averages[i] += +d[column1];
+    }
   });
 
-  color.domain(extentIpm);
-  x.domain(extentIpm);
+  for (var i=0; i<5; i++) {
+    averages[i] = (averages[i] / map.size()).toPrecision(4);
+  }
+
+  for (var i=0; i<5; i++) {
+    var column1 = columns[i];
+    extents[i] = d3.extent(hdi, function(d) {
+      return +d[column1];
+    });
+  }
+
+  extent = extents[selectedIdx];
+
+  color.domain(extent);
+  x.domain(extent);
 
   g.selectAll(".bar")
     .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
@@ -187,18 +190,13 @@ function processMap(err, idn2, hdi2) {
     .attr('font-weignt', 'bold')
     .text(`${title}: Indonesia`);
 
-  // Calculate average IPM
-  mapIpm.each(function(d) {
-    avgIpm += Number(d);
-  });
-  avgIpm = (avgIpm / mapIpm.size()).toPrecision(4);
+  average = averages[selectedIdx];
 
-  var details = `${title} (Average): ${avgIpm}`;
-  // document.getElementById('info-details').innerHTML = details;
+  var details = `${title} (Average): ${average}`;
   d3.select('#info-details')
     .text(details);
 
-  subunits = g.append('g')
+  g.append('g')
     .attr('id', 'subunits')
     .selectAll('path')
     .data(topojson.feature(idn, idn.objects.regencies).features)
@@ -207,12 +205,12 @@ function processMap(err, idn2, hdi2) {
     .attr('fill', function(d) {
       var key = d.properties.name;
       key = d.properties.nameAlt ? d.properties.nameAlt: key;
-      if (!mapIpm.get(key)) {
+      if (!map.get(key)) {
         key = d.properties.name;
         // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
 
-      return color(d[column] = mapIpm.get(key));
+      return color(d[column] = +map.get(key)[column]);
     })
     .attr('d', path)
     .text(function(d) { return d[column] + '%'; })
@@ -231,11 +229,11 @@ function getName(region) {
   return region.properties.province.toUpperCase() + ': ' + region.properties.name.toUpperCase();
 }
 
-function getIpm(region) {
+function getData(region) {
   var key = region.properties.name;
-  if (mapIpm.get(key)) { return mapIpm.get(key).toPrecision(4); }
+  if (map.get(key)) { return (+map.get(key)[column]).toPrecision(4); }
   key = region.properties.nameAlt;
-  if (mapIpm.get(key)) { return mapIpm.get(key).toPrecision(4); }
+  if (map.get(key)) { return (+map.get(key)[column]).toPrecision(4); }
 
   return 'no data';
 }
@@ -251,18 +249,16 @@ function handleOnClick(d) {
     k = 4;
     centered = d;
     location = getName(d);
-    details = `${title}: ${getIpm(d)}`;
+    details = `${title}: ${getData(d)}`;
   } else {
     x = width / 2;
     y = height / 2;
     k = 1;
     centered = null;
     location = 'INDONESIA';
-    details = `${title} (Average): ${avgIpm}`;
+    details = `${title} (Average): ${average}`;
   }
 
-  // document.getElementById('info-location').innerHTML = location;
-  // document.getElementById('info-details').innerHTML = details;
   d3.select('#info-location')
     .text(location);
   d3.select('#info-details')
