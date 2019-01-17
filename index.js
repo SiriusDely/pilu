@@ -32,15 +32,11 @@ d3.select('#columns')
   .attr('value', function(d) { return columns[d]; })
   .text(function(d) { return titles[d]; });
 
-var column = columns[selectedIdx];
-var title = titles[selectedIdx];
+var duration = 1000;
 
 function update() {
 
   selectedIdx = this.selectedIndex;
-  column = columns[selectedIdx];
-  title = titles[selectedIdx];
-
   extent = extents[selectedIdx];
 
   color.domain(extent);
@@ -51,14 +47,7 @@ function update() {
 
   average = averages[selectedIdx];
 
-  var details = `${title} (Average): ${average}`;
-  d3.select('#info-details')
-    .text(details);
-
-  g.select('.caption')
-    .text(`${title}: Indonesia`);
-
-  var duration = 1000;
+  column = columns[selectedIdx];
 
   g.selectAll('.subunit')
     .transition().duration(duration)
@@ -86,7 +75,30 @@ function update() {
     .select('.domain')
     // .transition().duration(duration)
     .remove();
+
+  title = titles[selectedIdx];
+
+  g.select('.caption')
+    .text(`${title}: Indonesia`);
+
+  var location, details;
+  if (centered) {
+    location = getName(centered);
+    details = `${title}: ${getData(centered)}`;
+  } else {
+    location = 'INDONESIA';
+    details = `${title} (Average): ${average}`;
+  }
+
+  d3.select('#info-location')
+    .text(location);
+  d3.select('#info-details')
+    .text(details);
+
 }
+
+var column = columns[selectedIdx];
+var title = titles[selectedIdx];
 
 var width = 960,
   height = 500;
