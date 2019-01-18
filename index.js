@@ -32,6 +32,15 @@ d3.select('#columns')
   .attr('value', function(d) { return columns[d]; })
   .text(function(d) { return titles[d]; });
 
+var tooltip = d3.select('body')
+  .append('div')
+  .style('position', 'absolute')
+  .style('font-family', "'Open Sans', sans-serif")
+  .style('font-size', '14px')
+  .style('color', '#333')
+  .style('z-index', '10')
+  .style('visibility', 'hidden');
+
 var duration = 1000;
 
 function update() {
@@ -49,14 +58,13 @@ function update() {
 
   column = columns[selectedIdx];
 
-  g.selectAll('.subunit')
+  g.selectAll('.regency')
     .transition().duration(duration)
     .attr('fill', function(d) {
       var key = d.properties.name;
       key = d.properties.nameAlt ? d.properties.nameAlt: key;
       if (!map.get(key)) {
         key = d.properties.name;
-        // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
       return color(d[column] = +map.get(key)[column]);
     })
@@ -77,10 +85,10 @@ function update() {
     .remove();
 
   title = titles[selectedIdx];
-
+  /*
   g.select('.caption')
     .text(`${title}: Indonesia`);
-
+  */
   var location, details;
   if (centered) {
     location = getName(centered);
@@ -153,7 +161,8 @@ svg.append('rect')
   .attr('class', 'background')
   .attr('width', width)
   .attr('height', height)
-  .on('click', handleOnClick);
+  .on('click', handleOnClick)
+;
 
 var g = svg.append('g');
 
@@ -172,9 +181,10 @@ var x = d3.scaleLinear()
 d3.queue()
   .defer(d3.json, './json/indonesia-provinces-regencies-topo.json')
   .defer(d3.csv, './csv/ipm.csv')
+  .defer(d3.json, './json/indonesia-provinces-cities-topo.json')
   .await(init);
 
-function init(err, idn, hdi) {
+function init(err, idn, hdi, idn2) {
   if (err) { throw err; }
 
   hdi.forEach(function(d) {
@@ -220,7 +230,7 @@ function init(err, idn, hdi) {
   )
     .select('.domain')
     .remove();
-
+  /*
   g.append('text')
     .attr('class', 'caption')
     .attr('x', x.range()[0])
@@ -229,6 +239,7 @@ function init(err, idn, hdi) {
     .attr('text-anchor', 'start')
     .attr('font-weignt', 'bold')
     .text(`${title}: Indonesia`);
+  */
 
   average = averages[selectedIdx];
 
@@ -237,11 +248,20 @@ function init(err, idn, hdi) {
     .text(details);
 
   g.append('g')
-    .attr('id', 'subunits')
+    .attr('id', 'provinces')
+    .selectAll('path')
+    .data(topojson.feature(idn2, idn2.objects.provinces).features)
+    .enter().append('path')
+    .attr('fill', '#eee')
+    .attr('d', path)
+    .on('click', handleOnClick);
+
+  g.append('g')
+    .attr('id', 'regencies')
     .selectAll('path')
     .data(topojson.feature(idn, idn.objects.regencies).features)
     .enter().append('path')
-    .attr('class', 'subunit')
+    .attr('class', 'regency')
     .attr('fill', function(d) {
       var key = d.properties.name;
       key = d.properties.nameAlt ? d.properties.nameAlt: key;
@@ -253,20 +273,67 @@ function init(err, idn, hdi) {
       return color(d[column] = +map.get(key)[column]);
     })
     .attr('d', path)
-    .text(function(d) { return d[column] + '%'; })
-    .on('click', handleOnClick);
+    // .text(function(d) { return d[column] + '%'; })
+    .on('click', handleOnClick)
+  ;
 
   g.append('path')
     .datum(topojson.mesh(idn, idn.objects.regencies), function(a, b) {
       return a !== b;
     })
-    .attr('id', 'state-borders')
+    .attr('id', 'regency-borders')
     .attr('d', path);
+
+  g.append('path')
+    .datum(topojson.mesh(idn2, idn2.objects.provinces), function(a, b) {
+      return a !== b;
+    })
+    .attr('id', 'province-borders')
+    .attr('d', path);
+
+  g.selectAll('circle')
+    .data(topojson.feature(idn2, idn2.objects.cities).features)
+    .enter()
+    .append('circle')
+    .attr('cx', function(d) {
+      return projection(d.geometry.coordinates)[0];
+    })
+    .attr('cy', function(d) {
+      return projection(d.geometry.coordinates)[1];
+    })
+    .attr('r', '2')
+    .attr('stroke', '#111')
+    .attr('stroke-width', '.2')
+    .attr('fill', '#ccc')
+    .attr('class', 'city')
+    .attr('d', path)
+    .on('mouseover', function(d) {
+      // d3.select('#place').text(d.properties.name);
+      // d3.select(this).attr('class', 'city hover');
+      if (!d.properties.name) console.log('d: ', d);
+      return tooltip.style('visibility', 'visible')
+        .text(d.properties.name);
+    })
+    .on('mousemove', function(d) {
+      return tooltip.style('top', (d3.event.pageY - 10) + 'px')
+        .style('left', (d3.event.pageX + 10) + 'px')
+        .text(d.properties.name);
+    })
+    .on('mouseout', function(d) {
+      // d3.select('#place').text('');
+      // d3.select(this).attr('class', 'city');
+      return tooltip.style('visibility', 'hidden');
+    })
+    ;
 
 };
 
 function getName(region) {
-  return region.properties.province.toUpperCase() + ': ' + region.properties.name.toUpperCase();
+  var properties = region.properties;
+  var province = properties.province ? properties.province.toUpperCase() : null;
+  var regency = properties.name.toUpperCase();
+  var name = province ? `${province}: ${regency}` : regency;
+  return name;
 }
 
 function getData(region) {
