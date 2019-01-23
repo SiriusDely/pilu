@@ -58,6 +58,18 @@ function update() {
 
   column = columns[selectedIdx];
 
+  g.selectAll('.province')
+    .transition().duration(duration)
+    .attr('fill', function(d) {
+      var key = d.properties.name;
+      key = d.properties.nameAlt ? d.properties.nameAlt: key;
+      if (!map.get(key)) {
+        key = d.properties.name;
+      }
+      return color(d[column] = +map.get(key)[column]);
+    })
+  ;
+
   g.selectAll('.regency')
     .transition().duration(duration)
     .attr('fill', function(d) {
@@ -180,11 +192,11 @@ var x = d3.scaleLinear()
 
 d3.queue()
   .defer(d3.json, './json/indonesia-provinces-regencies-topo.json')
-  .defer(d3.csv, './csv/ipm.csv')
   .defer(d3.json, './json/indonesia-provinces-cities-topo.json')
+  .defer(d3.csv, './csv/ipm.csv')
   .await(init);
 
-function init(err, idn, hdi, idn2) {
+function init(err, regencies, provinces, hdi) {
   if (err) { throw err; }
 
   hdi.forEach(function(d) {
@@ -250,16 +262,26 @@ function init(err, idn, hdi, idn2) {
   g.append('g')
     .attr('id', 'provinces')
     .selectAll('path')
-    .data(topojson.feature(idn2, idn2.objects.provinces).features)
+    .data(topojson.feature(provinces, provinces.objects.provinces).features)
     .enter().append('path')
-    .attr('fill', '#eee')
+    .attr('class', 'province')
+    .attr('fill', function(d) {
+      var key = d.properties.name;
+      key = d.properties.nameAlt ? d.properties.nameAlt: key;
+      if (!map.get(key)) {
+        key = d.properties.name;
+        // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
+      }
+
+      return color(d[column] = +map.get(key)[column]);
+    })
     .attr('d', path)
     .on('click', handleOnClick);
-
+  /*
   g.append('g')
     .attr('id', 'regencies')
     .selectAll('path')
-    .data(topojson.feature(idn, idn.objects.regencies).features)
+    .data(topojson.feature(regencies, regencies.objects.regencies).features)
     .enter().append('path')
     .attr('class', 'regency')
     .attr('fill', function(d) {
@@ -278,21 +300,21 @@ function init(err, idn, hdi, idn2) {
   ;
 
   g.append('path')
-    .datum(topojson.mesh(idn, idn.objects.regencies), function(a, b) {
+    .datum(topojson.mesh(regencies, regencies.objects.regencies), function(a, b) {
       return a !== b;
     })
     .attr('id', 'regency-borders')
     .attr('d', path);
-
+  */
   g.append('path')
-    .datum(topojson.mesh(idn2, idn2.objects.provinces), function(a, b) {
+    .datum(topojson.mesh(provinces, provinces.objects.provinces), function(a, b) {
       return a !== b;
     })
     .attr('id', 'province-borders')
     .attr('d', path);
 
   g.selectAll('circle')
-    .data(topojson.feature(idn2, idn2.objects.cities).features)
+    .data(topojson.feature(provinces, provinces.objects.cities).features)
     .enter()
     .append('circle')
     .attr('cx', function(d) {
