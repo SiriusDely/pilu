@@ -3,7 +3,7 @@ var provinces, regencies;
 var mapIdx = 0;
 
 d3.select('#maps')
-.on('change', handleMapsOnChange);
+  .on('change', handleMapsOnChange);
 
 function handleMapsOnChange() {
   if (mapIdx === this.selectedIndex) { return; }
@@ -74,7 +74,7 @@ function initRegencies(err, regencies1) {
     .attr('id', 'regency-borders')
     .attr('d', path);
 
-  if (provinces) {
+  if (showCities && provinces) {
     g.selectAll('circle')
       .data(topojson.feature(provinces, provinces.objects.cities).features)
       .enter()
@@ -105,6 +105,50 @@ function initRegencies(err, regencies1) {
         return tooltip.style('visibility', 'hidden');
       })
     ;
+  }
+}
+
+var showCities = true;
+
+d3.select('#cities1')
+  .on('change', handleCitiesOnChange);
+
+function handleCitiesOnChange() {
+  showCities = this.checked;
+
+  if (showCities && provinces) {
+    g.selectAll('circle')
+      .data(topojson.feature(provinces, provinces.objects.cities).features)
+      .enter()
+      .append('circle')
+      .attr('cx', function(d) {
+        return projection(d.geometry.coordinates)[0];
+      })
+      .attr('cy', function(d) {
+        return projection(d.geometry.coordinates)[1];
+      })
+      .attr('r', '2')
+      .attr('stroke', '#111')
+      .attr('stroke-width', '.2')
+      .attr('fill', '#ccc')
+      .attr('class', 'city')
+      .attr('d', path)
+      .on('mouseover', function(d) {
+        if (!d.properties.name) console.log('d: ', d);
+        return tooltip.style('visibility', 'visible')
+          .text(d.properties.name);
+      })
+      .on('mousemove', function(d) {
+        return tooltip.style('top', (d3.event.pageY - 10) + 'px')
+          .style('left', (d3.event.pageX + 10) + 'px')
+          .text(d.properties.name);
+      })
+      .on('mouseout', function(d) {
+        return tooltip.style('visibility', 'hidden');
+      });
+  } else {
+    g.selectAll('.city')
+      .remove();
   }
 }
 
@@ -430,41 +474,41 @@ function initProvinces(err, provinces1) {
     .attr('id', 'province-borders')
     .attr('d', path);
 
-  g.selectAll('circle')
-    .data(topojson.feature(provinces, provinces.objects.cities).features)
-    .enter()
-    .append('circle')
-    .attr('cx', function(d) {
-      return projection(d.geometry.coordinates)[0];
-    })
-    .attr('cy', function(d) {
-      return projection(d.geometry.coordinates)[1];
-    })
-    .attr('r', '2')
-    .attr('stroke', '#111')
-    .attr('stroke-width', '.2')
-    .attr('fill', '#ccc')
-    .attr('class', 'city')
-    .attr('d', path)
-    .on('mouseover', function(d) {
-      // d3.select('#place').text(d.properties.name);
-      // d3.select(this).attr('class', 'city hover');
-      if (!d.properties.name) console.log('d: ', d);
-      return tooltip.style('visibility', 'visible')
-        .text(d.properties.name);
-    })
-    .on('mousemove', function(d) {
-      return tooltip.style('top', (d3.event.pageY - 10) + 'px')
-        .style('left', (d3.event.pageX + 10) + 'px')
-        .text(d.properties.name);
-    })
-    .on('mouseout', function(d) {
-      // d3.select('#place').text('');
-      // d3.select(this).attr('class', 'city');
-      return tooltip.style('visibility', 'hidden');
-    })
-    ;
-
+  if (showCities) {
+    g.selectAll('circle')
+      .data(topojson.feature(provinces, provinces.objects.cities).features)
+      .enter()
+      .append('circle')
+      .attr('cx', function(d) {
+        return projection(d.geometry.coordinates)[0];
+      })
+      .attr('cy', function(d) {
+        return projection(d.geometry.coordinates)[1];
+      })
+      .attr('r', '2')
+      .attr('stroke', '#111')
+      .attr('stroke-width', '.2')
+      .attr('fill', '#ccc')
+      .attr('class', 'city')
+      .attr('d', path)
+      .on('mouseover', function(d) {
+        // d3.select('#place').text(d.properties.name);
+        // d3.select(this).attr('class', 'city hover');
+        if (!d.properties.name) console.log('d: ', d);
+        return tooltip.style('visibility', 'visible')
+          .text(d.properties.name);
+      })
+      .on('mousemove', function(d) {
+        return tooltip.style('top', (d3.event.pageY - 10) + 'px')
+          .style('left', (d3.event.pageX + 10) + 'px')
+          .text(d.properties.name);
+      })
+      .on('mouseout', function(d) {
+        // d3.select('#place').text('');
+        // d3.select(this).attr('class', 'city');
+        return tooltip.style('visibility', 'hidden');
+      });
+  }
 };
 
 function getName(region) {
