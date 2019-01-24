@@ -52,7 +52,11 @@ svg {
   font-size: 22px;
   text-align: center;
 }
-
+/*
+.city {
+  z-index: 100;
+}
+*/
 .city:hover {
   fill: white;
 }

@@ -1,4 +1,114 @@
-var selectedIdx = 0;
+var provinces, regencies;
+
+var mapIdx = 0;
+
+d3.select('#maps')
+.on('change', handleMapsOnChange);
+
+function handleMapsOnChange() {
+  if (mapIdx === this.selectedIndex) { return; }
+
+  mapIdx = this.selectedIndex;
+  if (mapIdx === 1) {
+    g.selectAll('.province')
+      .remove();
+    g.selectAll('#province-borders')
+      .remove();
+    g.selectAll('.city')
+      .remove();
+
+    if (regencies) {
+      initRegencies(null, regencies);
+    } else {
+      d3.queue()
+        .defer(d3.json, './json/indonesia-provinces-regencies-topo.json')
+        .await(initRegencies);
+    }
+  } else {
+    g.selectAll('.regency')
+      .remove();
+    g.selectAll('#regency-borders')
+      .remove();
+    g.selectAll('.city')
+      .remove();
+
+
+    if (provinces) {
+      initProvinces(null, provinces);
+    } else {
+      d3.queue()
+        .defer(d3.json, './json/indonesia-provinces-cities-topo.json')
+        .await(initProvinces);
+    }
+  }
+}
+
+function initRegencies(err, regencies1) {
+  if (err) { throw err; }
+
+  regencies = regencies1;
+
+  g.append('g')
+    .attr('id', 'regencies')
+    .selectAll('path')
+    .data(topojson.feature(regencies, regencies.objects.regencies).features)
+    .enter().append('path')
+    .attr('class', 'regency')
+    .attr('fill', function(d) {
+      var key = d.properties.name;
+      key = d.properties.nameAlt ? d.properties.nameAlt: key;
+      if (!map.get(key)) {
+        key = d.properties.name;
+      }
+
+      return color(d[column] = +map.get(key)[column]);
+    })
+    .attr('d', path)
+    .on('click', handleOnClick)
+  ;
+
+  g.append('path')
+    .datum(topojson.mesh(regencies, regencies.objects.regencies), function(a, b) {
+      return a !== b;
+    })
+    .attr('id', 'regency-borders')
+    .attr('d', path);
+
+  if (provinces) {
+    g.selectAll('circle')
+      .data(topojson.feature(provinces, provinces.objects.cities).features)
+      .enter()
+      .append('circle')
+      .attr('cx', function(d) {
+        return projection(d.geometry.coordinates)[0];
+      })
+      .attr('cy', function(d) {
+        return projection(d.geometry.coordinates)[1];
+      })
+      .attr('r', '2')
+      .attr('stroke', '#111')
+      .attr('stroke-width', '.2')
+      .attr('fill', '#ccc')
+      .attr('class', 'city')
+      .attr('d', path)
+      .on('mouseover', function(d) {
+        if (!d.properties.name) console.log('d: ', d);
+        return tooltip.style('visibility', 'visible')
+          .text(d.properties.name);
+      })
+      .on('mousemove', function(d) {
+        return tooltip.style('top', (d3.event.pageY - 10) + 'px')
+          .style('left', (d3.event.pageX + 10) + 'px')
+          .text(d.properties.name);
+      })
+      .on('mouseout', function(d) {
+        return tooltip.style('visibility', 'hidden');
+      })
+    ;
+  }
+}
+
+var columnIdx = 0;
 
 var columns = [
   'ipm',
@@ -25,7 +135,7 @@ var titles = [
 ];
 
 d3.select('#columns')
-  .on('change', update)
+  .on('change', handleColumnsOnChange)
   .selectAll('option')
   .data(d3.range(0, 5))
   .enter().append('option')
@@ -43,20 +153,20 @@ var tooltip = d3.select('body')
 
 var duration = 1000;
 
-function update() {
+function handleColumnsOnChange() {
 
-  selectedIdx = this.selectedIndex;
-  extent = extents[selectedIdx];
+  columnIdx = this.selectedIndex;
+  extent = extents[columnIdx];
 
   color.domain(extent);
   x.domain(extent);
 
-  var interpolator = interpolators[selectedIdx];
+  var interpolator = interpolators[columnIdx];
   color.interpolator(d3[interpolator]);
 
-  average = averages[selectedIdx];
+  average = averages[columnIdx];
 
-  column = columns[selectedIdx];
+  column = columns[columnIdx];
 
   g.selectAll('.province')
     .transition().duration(duration)
@@ -96,7 +206,7 @@ function update() {
     // .transition().duration(duration)
     .remove();
 
-  title = titles[selectedIdx];
+  title = titles[columnIdx];
   /*
   g.select('.caption')
     .text(`${title}: Indonesia`);
@@ -117,8 +227,8 @@ function update() {
 
 }
 
-var column = columns[selectedIdx];
-var title = titles[selectedIdx];
+var column = columns[columnIdx];
+var title = titles[columnIdx];
 
 var width = 960,
   height = 500;
@@ -185,18 +295,17 @@ var extent;
 var averages = Array.apply(null, Array(5)).map(function() { return 0 });
 var average;
 
-var interpolator = interpolators[selectedIdx];
+var interpolator = interpolators[columnIdx];
 var color = d3.scaleSequential(d3[interpolator]);
 var x = d3.scaleLinear()
   .rangeRound(extentLegend);
 
 d3.queue()
-  .defer(d3.json, './json/indonesia-provinces-regencies-topo.json')
-  .defer(d3.json, './json/indonesia-provinces-cities-topo.json')
   .defer(d3.csv, './csv/ipm.csv')
+  .defer(d3.json, './json/indonesia-provinces-cities-topo.json')
   .await(init);
 
-function init(err, regencies, provinces, hdi) {
+function init(err, hdi, provinces1) {
   if (err) { throw err; }
 
   hdi.forEach(function(d) {
@@ -222,7 +331,7 @@ function init(err, regencies, provinces, hdi) {
     });
   }
 
-  extent = extents[selectedIdx];
+  extent = extents[columnIdx];
 
   color.domain(extent);
   x.domain(extent);
@@ -253,11 +362,19 @@ function init(err, regencies, provinces, hdi) {
     .text(`${title}: Indonesia`);
   */
 
-  average = averages[selectedIdx];
+  average = averages[columnIdx];
 
   var details = `${title} (Average): ${average}`;
   d3.select('#info-details')
     .text(details);
+
+  initProvinces(err, provinces1);
+}
+
+function initProvinces(err, provinces1) {
+  if (err) { throw err; }
+
+  provinces = provinces1;
 
   g.append('g')
     .attr('id', 'provinces')
