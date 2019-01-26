@@ -1,0 +1,62 @@
+body {
+  background-color: #eee;
+  font-family: 'Proxima Nova', 'Montserrat', sans-serif;
+}
+
+svg {
+  /* outline: thin solid black; */
+}
+
+.background {
+  fill: none;
+  pointer-events: all;
+}
+
+#regencies .active {
+  fill: orange;
+}
+
+#regency-borders {
+  fill: none;
+  pointer-events: none;
+  stroke: #555;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: .2px;
+}
+
+#provinces .active {
+  fill: yellow;
+}
+
+#province-borders {
+  fill: none;
+  pointer-events: none;
+  stroke: #555;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: .2px;
+  /*
+  stroke: #fff;
+  stroke-dasharray: 1, 1;
+  */
+}
+
+#info-location {
+  font-size: 26px;
+  font-weight: bold;
+  text-align: center;
+}
+
+#info-details {
+  font-size: 22px;
+  text-align: center;
+}
+/*
+.city {
+  z-index: 100;
+}
+*/
+.city:hover {
+  fill: white;
+}

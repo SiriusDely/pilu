@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
+    <title>Indonesia's Demography</title>
+    <script type='text/javascript' src='//d3js.org/d3.v4.min.js' charset='utf-8'></script>
+    <script type='text/javascript' src='//d3js.org/d3-scale-chromatic.v1.min.js' charset='utf-8'></script>
+    <script type='text/javascript' src='//d3js.org/topojson.v1.min.js' charset='utf-8'></script>
+    <link rel='stylesheet' href='demo.css' />
+  </head>
+  <body>
+    <select id='maps'>
+      <option value='provinces'>Provinces</option>
+      <option value='regencies'>Regencies</option>
+    </select>
+    <input type="checkbox" id="cities1" checked>Cities
+    <select id='columns'></select>
+    <div id='info'>
+      <div id='info-location'>INDONESIA</div>
+      <div id='info-details'>Human Development Index (Average): </div>
+    </div>
+    <svg id='map'></svg>
+    <script type='text/javascript' src='demo.js'>
+    </script>
+  </body>
+</html>
