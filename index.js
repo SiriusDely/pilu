@@ -1,4 +1,6 @@
 var provinces, regencies;
+var pilpresProvinces, pilpresRegencies;
+var bars;
 
 var mapIdx = 0;
 
@@ -9,7 +11,7 @@ function handleMapsOnChange() {
   if (mapIdx === this.selectedIndex) { return; }
 
   mapIdx = this.selectedIndex;
-  if (mapIdx === 1) {
+  if (mapIdx > 0) {
     g.selectAll('.province')
       .remove();
     g.selectAll('#province-borders')
@@ -18,9 +20,10 @@ function handleMapsOnChange() {
       .remove();
 
     if (regencies) {
-      initRegencies(null, regencies);
+      initRegencies(null, pilpresRegencies, regencies);
     } else {
       d3.queue()
+        .defer(d3.csv, './csv/transposed/PILPRES2014.CSV')
         .defer(d3.json, './json/indonesia-provinces-regencies-topo.json')
         .await(initRegencies);
     }
@@ -34,17 +37,108 @@ function handleMapsOnChange() {
 
 
     if (provinces) {
-      initProvinces(null, provinces);
+      initProvinces(null, pilpresProvinces, provinces);
     } else {
       d3.queue()
+        .defer(d3.csv, './csv/transposed/PILPRES2014-PROVINCES.CSV')
         .defer(d3.json, './json/indonesia-provinces-cities-topo.json')
         .await(initProvinces);
     }
   }
 }
 
-function initRegencies(err, regencies1) {
+function initRegencies(err, pilpresRegencies1, regencies1) {
   if (err) { throw err; }
+
+  pilpresRegencies = pilpresRegencies1;
+
+  if (!regencies) {
+    pilpresRegencies.forEach(function(d) {
+      mapRegencies.set(d['Kabupaten / Kota'], d);
+    });
+
+    mapRegencies.each(function(d) {
+      for (var i=0; i<columns.length; i++) {
+        var column1 = columns[i];
+        averageRegencies[i] += +d[column1];
+      }
+    });
+
+    for (var i=0; i<columns.length; i++) {
+      var column1 = columns[i];
+      if (column1 === 'Selisih Suara (%)') {
+        averageRegencies[i] = (averageRegencies[i + 1] / averageRegencies[i + 2]) * 100;
+      }
+    }
+
+    for (var i=0; i<columns.length; i++) {
+      var column1 = columns[i];
+      extentRegencies[i] = d3.extent(pilpresRegencies, function(d) {
+        var data = +d[column1];
+        return +d[column1];
+      });
+    }
+  }
+
+  extent = extentRegencies[columnIdx];
+
+  color.domain(extent);
+  x.domain(extent);
+
+  if (bars) {
+    g.selectAll('.bar')
+      .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
+      .transition().duration(duration)
+      .style('fill', function(d) { return color(x.invert(d)); })
+
+    g.transition().duration(duration)
+      .call(d3.axisBottom(x)
+        .ticks(9)
+        .tickSize(13)
+        .tickFormat(function(x) {
+          var format;
+          if (column === 'Selisih Suara (%)') {
+            format = x + ' %';
+          } else {
+            format = (+x / 1000000) + 'jt';
+          }
+          return format;
+        })
+      )
+      .select('.domain')
+      .remove();
+  } else {
+    g.selectAll('.bar')
+      .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
+      .enter().append('rect')
+      .attr('class', 'bar')
+      .attr('x', function(d) { return d; })
+      .attr('height', 8)
+      .attr('width', 1)
+      .style('fill', function(d) { return color(x.invert(d)); })
+
+    g.call(d3.axisBottom(x)
+      .ticks(9)
+      .tickSize(13)
+      .tickFormat(function(x) {
+        var format;
+        if (column === 'Selisih Suara (%)') {
+          format = x + ' %';
+        } else {
+          format = (+x / 1000000) + 'jt';
+        }
+        return format;
+      })
+    )
+      .select('.domain')
+      .remove();
+  }
+
+  average = averageRegencies[columnIdx];
+
+  var details = `${title}: ${average.toLocaleString()}`;
+  d3.select('#info-details')
+    .text(details);
 
   regencies = regencies1;
 
@@ -56,12 +150,12 @@ function initRegencies(err, regencies1) {
     .attr('class', 'regency')
     .attr('fill', function(d) {
       var key = d.properties.name;
-      key = d.properties.nameAlt ? d.properties.nameAlt: key;
-      if (!map.get(key)) {
+      key = d.properties.nameAlt ? d.properties.nameAlt : key;
+      if (!mapRegencies.get(key)) {
+        // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
         key = d.properties.name;
       }
-
-      return color(d[column] = +map.get(key)[column]);
+      return color(d[column] = +mapRegencies.get(key)[column]);
     })
     .attr('d', path)
     .on('click', handleOnClick)
@@ -155,33 +249,37 @@ function handleCitiesOnChange() {
 var columnIdx = 0;
 
 var columns = [
-  'ipm',
-  'pengeluaran_perkapita',
-  'angka_harapan_hidup',
-  'angka_melek_huruf',
-  'lama_sekolah',
+  'Selisih Suara (%)',
+  'Selisih Suara',
+  'Jumlah Suara Sah Calon Presiden dan Wakil Presiden',
+  '5. Jumlah Pemilih (1+2+3+4+5) (JML)',
+  'Jumlah Tidak Memilih dan Suara Tidak Sah'
 ];
 
 var interpolators = [
   'interpolateRdBu',
-  'interpolateGnBu',
+  'interpolateRdBu',
   'interpolateBlues',
+  'interpolatePurples',
+  'interpolateOranges',
+  'interpolateRdBu',
+  'interpolateGnBu',
   'interpolateRdYlBu',
   'interpolateSpectral',
 ];
 
 var titles = [
-  'Human Development Index',
-  'Per-Capita Expenditure',
-  'Life Expectancy',
-  'Literacy Rate',
-  'Duration of Education'
+  'Selisih Suara (%)',
+  'Selisih Suara',
+  'Jumlah Suara Sah',
+  'Jumlah DPT',
+  'Jumlah GolPut'
 ];
 
 d3.select('#columns')
   .on('change', handleColumnsOnChange)
   .selectAll('option')
-  .data(d3.range(0, 5))
+  .data(d3.range(0, columns.length))
   .enter().append('option')
   .attr('value', function(d) { return columns[d]; })
   .text(function(d) { return titles[d]; });
@@ -195,12 +293,12 @@ var tooltip = d3.select('body')
   .style('z-index', '10')
   .style('visibility', 'hidden');
 
-var duration = 1000;
+var duration = 750;
 
 function handleColumnsOnChange() {
 
   columnIdx = this.selectedIndex;
-  extent = extents[columnIdx];
+  extent = mapIdx > 0 ? extentRegencies[columnIdx] : extentProvinces[columnIdx];
 
   color.domain(extent);
   x.domain(extent);
@@ -208,9 +306,11 @@ function handleColumnsOnChange() {
   var interpolator = interpolators[columnIdx];
   color.interpolator(d3[interpolator]);
 
-  average = averages[columnIdx];
+  average = mapIdx > 0 ? averageRegencies[columnIdx] : averageProvinces[columnIdx];
 
   column = columns[columnIdx];
+
+  var map = mapIdx > 0 ? mapRegencies : mapProvinces;
 
   g.selectAll('.province')
     .transition().duration(duration)
@@ -236,16 +336,25 @@ function handleColumnsOnChange() {
     })
   ;
 
-  g.selectAll(".bar")
+  g.selectAll('.bar')
     .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
     .transition().duration(duration)
-    .style("fill", function(d) { return color(x.invert(d)); })
+    .style('fill', function(d) { return color(x.invert(d)); })
 
   g.transition().duration(duration)
     .call(d3.axisBottom(x)
-    .ticks(9)
-    .tickSize(13)
-  )
+      .ticks(9)
+      .tickSize(13)
+      .tickFormat(function(x) {
+        var format;
+        if (column === 'Selisih Suara (%)') {
+          format = x + ' %';
+        } else {
+          format = (+x / 1000000) + 'jt';
+        }
+        return format;
+      })
+    )
     .select('.domain')
     // .transition().duration(duration)
     .remove();
@@ -261,7 +370,7 @@ function handleColumnsOnChange() {
     details = `${title}: ${getData(centered)}`;
   } else {
     location = 'INDONESIA';
-    details = `${title} (Average): ${average}`;
+    details = `${title}: ${average.toLocaleString()}`;
   }
 
   d3.select('#info-location')
@@ -279,7 +388,8 @@ var width = 960,
 
 var centered;
 
-var map = d3.map();
+var mapProvinces = d3.map();
+var mapRegencies = d3.map();
 
 var average = 0;
 
@@ -299,27 +409,27 @@ var svg = d3.select('#map')
 function responsivefy(svg) {
   // get container + svg aspect ratio
   var container = d3.select(svg.node().parentNode),
-    width = parseInt(svg.style("width")),
-    height = parseInt(svg.style("height")),
+    width = parseInt(svg.style('width')),
+    height = parseInt(svg.style('height')),
     aspect = width / height;
 
   // add viewBox and preserveAspectRatio properties,
-  // and call resize so that svg resizes on inital page load
-  svg.attr("viewBox", "0 0 " + width + " " + height)
-    .attr("perserveAspectRatio", "xMinYMid")
+  // and call resize so that svg resizes on initial page load
+  svg.attr('viewBox', '0 0 ' + width + ' ' + height)
+    .attr('perserveAspectRatio', 'xMinYMid')
     .call(resize);
 
   // to register multiple listeners for same event type, 
   // you need to add namespace, i.e., 'click.foo'
   // necessary if you call invoke this function for multiple svgs
   // api docs: https://github.com/mbostock/d3/wiki/Selections#on
-  d3.select(window).on("resize." + container.attr("id"), resize);
+  d3.select(window).on('resize.' + container.attr('id'), resize);
 
   // get width of container and resize svg to fit it
   function resize() {
-    var targetWidth = parseInt(container.style("width"));
-    svg.attr("width", targetWidth);
-    svg.attr("height", Math.round(targetWidth / aspect));
+    var targetWidth = parseInt(container.style('width'));
+    svg.attr('width', targetWidth);
+    svg.attr('height', Math.round(targetWidth / aspect));
   }
 }
 
@@ -333,10 +443,12 @@ svg.append('rect')
 var g = svg.append('g');
 
 var extentLegend = [600, 860];
-var extents = new Array(5);
+var extentProvinces = new Array(columns.length);
+var extentRegencies = new Array(columns.length);
 var extent;
 
-var averages = Array.apply(null, Array(5)).map(function() { return 0 });
+var averageProvinces = Array.apply(null, Array(columns.length)).map(function() { return 0 });
+var averageRegencies = Array.apply(null, Array(columns.length)).map(function() { return 0 });
 var average;
 
 var interpolator = interpolators[columnIdx];
@@ -345,56 +457,95 @@ var x = d3.scaleLinear()
   .rangeRound(extentLegend);
 
 d3.queue()
-  .defer(d3.csv, './csv/ipm.csv')
+  .defer(d3.csv, './csv/transposed/PILPRES2014-PROVINCES.CSV')
   .defer(d3.json, './json/indonesia-provinces-cities-topo.json')
-  .await(init);
+  .await(initProvinces);
 
-function init(err, hdi, provinces1) {
+function initProvinces(err, pilpresProvinces1, provinces1) {
   if (err) { throw err; }
 
-  hdi.forEach(function(d) {
-    map.set(d.nama_kabkota, d);
-  });
+  pilpresProvinces = pilpresProvinces1;
 
-  // Calculate average IPM
-  map.each(function(d) {
-    for (var i=0; i<5; i++) {
-      var column1 = columns[i];
-      averages[i] += +d[column1];
-    }
-  });
-
-  for (var i=0; i<5; i++) {
-    averages[i] = (averages[i] / map.size()).toPrecision(4);
-  }
-
-  for (var i=0; i<5; i++) {
-    var column1 = columns[i];
-    extents[i] = d3.extent(hdi, function(d) {
-      return +d[column1];
+  if (!provinces) {
+    pilpresProvinces.forEach(function(d) {
+      mapProvinces.set(d['Provinsi'], d);
     });
+
+    mapProvinces.each(function(d) {
+      for (var i=0; i<columns.length; i++) {
+        var column1 = columns[i];
+        averageProvinces[i] += +d[column1];
+      }
+    });
+
+    for (var i=0; i<columns.length; i++) {
+      var column1 = columns[i];
+      if (column1 === 'Selisih Suara (%)') {
+        averageProvinces[i] = (averageProvinces[i + 1] / averageProvinces[i + 2]) * 100;
+      }
+    }
+
+    for (var i=0; i<columns.length; i++) {
+      var column1 = columns[i];
+      extentProvinces[i] = d3.extent(pilpresProvinces, function(d) {
+        return +d[column1];
+      });
+    }
   }
 
-  extent = extents[columnIdx];
+  extent = extentProvinces[columnIdx];
 
   color.domain(extent);
   x.domain(extent);
 
-  g.selectAll(".bar")
-    .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
-    .enter().append("rect")
-    .attr('class', 'bar')
-    .attr("x", function(d) { return d; })
-    .attr("height", 8)
-    .attr("width", 1)
-    .style("fill", function(d) { return color(x.invert(d)); })
+  if (bars) {
+    g.selectAll('.bar')
+      .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
+      .transition().duration(duration)
+      .style('fill', function(d) { return color(x.invert(d)); })
 
-  g.call(d3.axisBottom(x)
-    .ticks(9)
-    .tickSize(13)
-  )
-    .select('.domain')
-    .remove();
+    g.transition().duration(duration)
+      .call(d3.axisBottom(x)
+        .ticks(9)
+        .tickSize(13)
+        .tickFormat(function(x) {
+          var format;
+          if (column === 'Selisih Suara (%)') {
+            format = x + ' %';
+          } else {
+            format = (+x / 1000000) + 'jt';
+          }
+          return format;
+        })
+      )
+      .select('.domain')
+      .remove();
+  } else {
+    bars = g.selectAll('.bar')
+      .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
+      .enter().append('rect')
+      .attr('class', 'bar')
+      .attr('x', function(d) { return d; })
+      .attr('height', 8)
+      .attr('width', 1)
+      .style('fill', function(d) { return color(x.invert(d)); })
+
+    g.call(d3.axisBottom(x)
+      .ticks(9)
+      .tickSize(13)
+      .tickFormat(function(x) {
+        var format;
+        if (column === 'Selisih Suara (%)') {
+          format = x + ' %';
+        } else {
+          format = (+x / 1000000) + 'jt';
+        }
+        return format;
+      })
+    )
+      .select('.domain')
+      .remove();
+  }
   /*
   g.append('text')
     .attr('class', 'caption')
@@ -406,17 +557,11 @@ function init(err, hdi, provinces1) {
     .text(`${title}: Indonesia`);
   */
 
-  average = averages[columnIdx];
+  average = averageProvinces[columnIdx];
 
-  var details = `${title} (Average): ${average}`;
+  var details = `${title}: ${average.toLocaleString()}`;
   d3.select('#info-details')
     .text(details);
-
-  initProvinces(err, provinces1);
-}
-
-function initProvinces(err, provinces1) {
-  if (err) { throw err; }
 
   provinces = provinces1;
 
@@ -428,13 +573,12 @@ function initProvinces(err, provinces1) {
     .attr('class', 'province')
     .attr('fill', function(d) {
       var key = d.properties.name;
-      key = d.properties.nameAlt ? d.properties.nameAlt: key;
-      if (!map.get(key)) {
-        key = d.properties.name;
+      key = d.properties.nameAlt ? d.properties.nameAlt : key;
+      if (!mapProvinces.get(key)) {
         // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
 
-      return color(d[column] = +map.get(key)[column]);
+      return color(d[column] = +mapProvinces.get(key)[column]);
     })
     .attr('d', path)
     .on('click', handleOnClick);
@@ -448,12 +592,12 @@ function initProvinces(err, provinces1) {
     .attr('fill', function(d) {
       var key = d.properties.name;
       key = d.properties.nameAlt ? d.properties.nameAlt: key;
-      if (!map.get(key)) {
+      if (!mapProvinces.get(key)) {
         key = d.properties.name;
         // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
 
-      return color(d[column] = +map.get(key)[column]);
+      return color(d[column] = +mapProvinces.get(key)[column]);
     })
     .attr('d', path)
     // .text(function(d) { return d[column] + '%'; })
@@ -513,18 +657,18 @@ function initProvinces(err, provinces1) {
 
 function getName(region) {
   var properties = region.properties;
-  var province = properties.province ? properties.province.toUpperCase() : null;
-  var regency = properties.name.toUpperCase();
+  var province = properties.province ? properties.province : null;
+  var regency = properties.name;
   var name = province ? `${province}: ${regency}` : regency;
   return name;
 }
 
 function getData(region) {
+  var map = mapIdx > 0 ? mapRegencies : mapProvinces;
   var key = region.properties.name;
-  if (map.get(key)) { return (+map.get(key)[column]).toPrecision(4); }
+  if (map.get(key)) { return (+map.get(key)[column]); }
   key = region.properties.nameAlt;
-  if (map.get(key)) { return (+map.get(key)[column]).toPrecision(4); }
-
+  if (map.get(key)) { return (+map.get(key)[column]); }
   return 'no data';
 }
 
@@ -546,7 +690,7 @@ function handleOnClick(d) {
     k = 1;
     centered = null;
     location = 'INDONESIA';
-    details = `${title} (Average): ${average}`;
+    details = `${title}: ${average.toLocaleString()}`;
   }
 
   d3.select('#info-location')
@@ -560,7 +704,7 @@ function handleOnClick(d) {
     });
 
   g.transition()
-    .duration(750)
+    .duration(duration)
     .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')' +
       'scale(' + k + ')translate(' + -x + ',' + -y + ')')
     .attr('stroke-width', 1.5 / k + 'px');
