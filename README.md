@@ -4,6 +4,8 @@ Visualisasi Peta Pemilihan Presiden Tahun 2014: https://siriusdely.com/pilu/inde
 
 Sumber Data: https://pilpres2014.kpu.go.id/dc1.php
 
+Sumber Map: https://github.com/junwatu/indonesia.json & https://github.com/tvalentius/Indonesia-topojson
+
 Kota Bandung
 Pasangan yang Unggul: H. Prabowo Subianto - Ir. M. H. Hatta Rajasa
 Selisih Suara (%): 15.38691215
