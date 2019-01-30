@@ -40,7 +40,7 @@ function handleMapsOnChange() {
       initProvinces(null, pilpresProvinces, provinces);
     } else {
       d3.queue()
-        .defer(d3.csv, './csv/transposed/PILPRES2014-PROVINCES.CSV')
+        .defer(d3.csv, './csv/transposed/PILPRES2014-PROVINCES.csv')
         .defer(d3.json, './json/indonesia-provinces-cities-topo.json')
         .await(initProvinces);
     }
