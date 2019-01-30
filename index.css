@@ -60,3 +60,16 @@ svg {
 .city:hover {
   fill: white;
 }
+
+div.tooltip {
+  background: LightGray;
+  border-radius: 2px;
+  color: #111;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 14px;
+  opacity: 0.8;
+  padding: 2px 4px;
+  position: absolute;
+  visibility: hidden;
+  z-index: 10;
+}

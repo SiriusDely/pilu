@@ -60,23 +60,30 @@ function initRegencies(err, pilpresRegencies1, regencies1) {
     mapRegencies.each(function(d) {
       for (var i=0; i<columns.length; i++) {
         var column1 = columns[i];
+        if (column1 === 'Pasangan yang Unggul') { continue; }
         averageRegencies[i] += +d[column1];
       }
     });
 
     for (var i=0; i<columns.length; i++) {
       var column1 = columns[i];
-      if (column1 === 'Selisih Suara (%)') {
+      if (column1 === 'Pasangan yang Unggul') {
+        averageRegencies[i] = 'Ir. H. Joko Widodo - Drs. H. M. Jusuf Kalla';
+      } else if (column1 === 'Selisih Suara (%)') {
         averageRegencies[i] = (averageRegencies[i + 1] / averageRegencies[i + 2]) * 100;
       }
     }
 
     for (var i=0; i<columns.length; i++) {
       var column1 = columns[i];
-      extentRegencies[i] = d3.extent(pilpresRegencies, function(d) {
-        var data = +d[column1];
-        return +d[column1];
-      });
+      if (column1 === 'Pasangan yang Unggul') {
+        extentRegencies[i] = [0, 4];
+      } else {
+        extentRegencies[i] = d3.extent(pilpresRegencies, function(d) {
+          var data = +d[column1];
+          return +d[column1];
+        });
+      }
     }
   }
 
@@ -89,7 +96,14 @@ function initRegencies(err, pilpresRegencies1, regencies1) {
     g.selectAll('.bar')
       .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
       .transition().duration(duration)
-      .style('fill', function(d) { return color(x.invert(d)); })
+      .style('fill', function(d) {
+        if (column === 'Pasangan yang Unggul') {
+          var data = d > extentLegend[0] + ((extentLegend[1] - extentLegend[0]) / 2) ? 'Crimson' : 'DarkOrange';
+          return data;
+        } else {
+          return color(x.invert(d));
+        }
+      });
 
     g.transition().duration(duration)
       .call(d3.axisBottom(x)
@@ -97,8 +111,16 @@ function initRegencies(err, pilpresRegencies1, regencies1) {
         .tickSize(13)
         .tickFormat(function(x) {
           var format;
-          if (column === 'Selisih Suara (%)') {
-            format = x + ' %';
+          if (column === 'Pasangan yang Unggul') {
+            if (x === 1) {
+              format = 'Prabowo - Hatta';
+            } else if (x === 3) {
+              format = 'Jokowi - JK';
+            } else {
+              format = '';
+            }
+          } else if (column === 'Selisih Suara (%)') {
+            format = x + '%';
           } else {
             format = (+x / 1000000) + 'jt';
           }
@@ -115,15 +137,30 @@ function initRegencies(err, pilpresRegencies1, regencies1) {
       .attr('x', function(d) { return d; })
       .attr('height', 8)
       .attr('width', 1)
-      .style('fill', function(d) { return color(x.invert(d)); })
+      .style('fill', function(d) {
+        if (column === 'Pasangan yang Unggul') {
+          var data = d > extentLegend[0] + ((extentLegend[1] - extentLegend[0]) / 2) ? 'Crimson' : 'DarkOrange';
+          return data;
+        } else {
+          return color(x.invert(d));
+        }
+      });
 
     g.call(d3.axisBottom(x)
       .ticks(9)
       .tickSize(13)
       .tickFormat(function(x) {
         var format;
-        if (column === 'Selisih Suara (%)') {
-          format = x + ' %';
+        if (column === 'Pasangan yang Unggul') {
+          if (x === 1) {
+            format = 'Prabowo - Hatta';
+          } else if (x === 3) {
+            format = 'Jokowi - JK';
+          } else {
+            format = '';
+          }
+        } else if (column === 'Selisih Suara (%)') {
+          format = x + '%';
         } else {
           format = (+x / 1000000) + 'jt';
         }
@@ -155,10 +192,38 @@ function initRegencies(err, pilpresRegencies1, regencies1) {
         // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
         key = d.properties.name;
       }
-      return color(d[column] = +mapRegencies.get(key)[column]);
+      if (column === 'Pasangan yang Unggul') {
+        var data = mapRegencies.get(key)[column];
+        d[column] = data === 'H. Prabowo Subianto - Ir. M. H. Hatta Rajasa' ? 'DarkOrange' : 'Crimson';
+        return d[column];
+      } else {
+        d[column] = +mapRegencies.get(key)[column];
+        return color(d[column]);
+      }
     })
     .attr('d', path)
     .on('click', handleOnClick)
+    .on('mouseover', function(d) {
+      var html = getName(d);
+      for (var i=0; i<columns.length; i++) {
+        var column1 = columns[i];
+        html += `<br />${titles[i]}: ${getData(d, column1)}`;
+      }
+      return tooltip.style('visibility', 'visible').html(html);
+    })
+    .on('mousemove', function(d) {
+      var html = getName(d);
+      for (var i=0; i<columns.length; i++) {
+        var column1 = columns[i];
+        html += `<br />${titles[i]}: ${getData(d, column1)}`;
+      }
+      return tooltip.style('top', (d3.event.pageY - 10) + 'px')
+        .style('left', (d3.event.pageX + 10) + 'px')
+        .html(html);
+    })
+    .on('mouseout', function(d) {
+      return tooltip.style('visibility', 'hidden');
+    })
   ;
 
   g.append('path')
@@ -188,12 +253,17 @@ function initRegencies(err, pilpresRegencies1, regencies1) {
       .on('mouseover', function(d) {
         if (!d.properties.name) console.log('d: ', d);
         return tooltip.style('visibility', 'visible')
-          .text(d.properties.name);
+          // .text(d.properties.name)
+          .text(
+            getName(d) + '\n' + getName(d)
+          );
       })
       .on('mousemove', function(d) {
         return tooltip.style('top', (d3.event.pageY - 10) + 'px')
           .style('left', (d3.event.pageX + 10) + 'px')
-          .text(d.properties.name);
+          // .text(d.properties.name)
+          .text(getName(d))
+        ;
       })
       .on('mouseout', function(d) {
         return tooltip.style('visibility', 'hidden');
@@ -249,6 +319,7 @@ function handleCitiesOnChange() {
 var columnIdx = 0;
 
 var columns = [
+  'Pasangan yang Unggul',
   'Selisih Suara (%)',
   'Selisih Suara',
   'Jumlah Suara Sah Calon Presiden dan Wakil Presiden',
@@ -257,6 +328,7 @@ var columns = [
 ];
 
 var interpolators = [
+  'interpolateGrays',
   'interpolateRdBu',
   'interpolateRdBu',
   'interpolateBlues',
@@ -269,6 +341,7 @@ var interpolators = [
 ];
 
 var titles = [
+  'Pasangan yang Unggul',
   'Selisih Suara (%)',
   'Selisih Suara',
   'Jumlah Suara Sah',
@@ -286,12 +359,7 @@ d3.select('#columns')
 
 var tooltip = d3.select('body')
   .append('div')
-  .style('position', 'absolute')
-  .style('font-family', "'Open Sans', sans-serif")
-  .style('font-size', '14px')
-  .style('color', '#333')
-  .style('z-index', '10')
-  .style('visibility', 'hidden');
+  .attr('class', 'tooltip');
 
 var duration = 750;
 
@@ -316,11 +384,18 @@ function handleColumnsOnChange() {
     .transition().duration(duration)
     .attr('fill', function(d) {
       var key = d.properties.name;
-      key = d.properties.nameAlt ? d.properties.nameAlt: key;
-      if (!map.get(key)) {
-        key = d.properties.name;
+      key = d.properties.nameAlt ? d.properties.nameAlt : key;
+      if (!mapProvinces.get(key)) {
+        // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
-      return color(d[column] = +map.get(key)[column]);
+      if (column === 'Pasangan yang Unggul') {
+        var data = mapProvinces.get(key)[column];
+        d[column] = data === 'H. Prabowo Subianto - Ir. M. H. Hatta Rajasa' ? 'DarkOrange' : 'Crimson';
+        return d[column];
+      } else {
+        d[column] = +mapProvinces.get(key)[column];
+        return color(d[column]);
+      }
     })
   ;
 
@@ -328,18 +403,31 @@ function handleColumnsOnChange() {
     .transition().duration(duration)
     .attr('fill', function(d) {
       var key = d.properties.name;
-      key = d.properties.nameAlt ? d.properties.nameAlt: key;
-      if (!map.get(key)) {
+      key = d.properties.nameAlt ? d.properties.nameAlt : key;
+      if (!mapRegencies.get(key)) {
         key = d.properties.name;
       }
-      return color(d[column] = +map.get(key)[column]);
-    })
-  ;
+      if (column === 'Pasangan yang Unggul') {
+        var data = mapRegencies.get(key)[column];
+        d[column] = data === 'H. Prabowo Subianto - Ir. M. H. Hatta Rajasa' ? 'DarkOrange' : 'Crimson';
+        return d[column];
+      } else {
+        d[column] = +mapRegencies.get(key)[column];
+        return color(d[column]);
+      }
+    });
 
   g.selectAll('.bar')
     .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
     .transition().duration(duration)
-    .style('fill', function(d) { return color(x.invert(d)); })
+    .style('fill', function(d) {
+      if (column === 'Pasangan yang Unggul') {
+        var data = d > extentLegend[0] + ((extentLegend[1] - extentLegend[0]) / 2) ? 'Crimson' : 'DarkOrange';
+        return data;
+      } else {
+        return color(x.invert(d));
+      }
+    });
 
   g.transition().duration(duration)
     .call(d3.axisBottom(x)
@@ -347,8 +435,16 @@ function handleColumnsOnChange() {
       .tickSize(13)
       .tickFormat(function(x) {
         var format;
-        if (column === 'Selisih Suara (%)') {
-          format = x + ' %';
+        if (column === 'Pasangan yang Unggul') {
+          if (x === 1) {
+            format = 'Prabowo - Hatta';
+          } else if (x === 3) {
+            format = 'Jokowi - JK';
+          } else {
+            format = '';
+          }
+        } else if (column === 'Selisih Suara (%)') {
+          format = x + '%';
         } else {
           format = (+x / 1000000) + 'jt';
         }
@@ -474,22 +570,29 @@ function initProvinces(err, pilpresProvinces1, provinces1) {
     mapProvinces.each(function(d) {
       for (var i=0; i<columns.length; i++) {
         var column1 = columns[i];
+        if (column1 === 'Pasangan yang Unggul') { continue; }
         averageProvinces[i] += +d[column1];
       }
     });
 
     for (var i=0; i<columns.length; i++) {
       var column1 = columns[i];
-      if (column1 === 'Selisih Suara (%)') {
+      if (column1 === 'Pasangan yang Unggul') {
+        averageProvinces[i] = 'Ir. H. Joko Widodo - Drs. H. M. Jusuf Kalla';
+      } else if (column1 === 'Selisih Suara (%)') {
         averageProvinces[i] = (averageProvinces[i + 1] / averageProvinces[i + 2]) * 100;
       }
     }
 
     for (var i=0; i<columns.length; i++) {
       var column1 = columns[i];
-      extentProvinces[i] = d3.extent(pilpresProvinces, function(d) {
-        return +d[column1];
-      });
+      if (column1 === 'Pasangan yang Unggul') {
+        extentProvinces[i] = [0, 4];
+      } else {
+        extentProvinces[i] = d3.extent(pilpresProvinces, function(d) {
+          return +d[column1];
+        });
+      }
     }
   }
 
@@ -502,7 +605,14 @@ function initProvinces(err, pilpresProvinces1, provinces1) {
     g.selectAll('.bar')
       .data(d3.range(extentLegend[0], extentLegend[1]), function(d) { return d; })
       .transition().duration(duration)
-      .style('fill', function(d) { return color(x.invert(d)); })
+      .style('fill', function(d) {
+        if (column === 'Pasangan yang Unggul') {
+          var data = d > extentLegend[0] + ((extentLegend[1] - extentLegend[0]) / 2) ? 'Crimson' : 'DarkOrange';
+          return data;
+        } else {
+          return color(x.invert(d));
+        }
+      });
 
     g.transition().duration(duration)
       .call(d3.axisBottom(x)
@@ -510,8 +620,16 @@ function initProvinces(err, pilpresProvinces1, provinces1) {
         .tickSize(13)
         .tickFormat(function(x) {
           var format;
-          if (column === 'Selisih Suara (%)') {
-            format = x + ' %';
+          if (column === 'Pasangan yang Unggul') {
+            if (x === 1) {
+              format = 'Prabowo - Hatta';
+            } else if (x === 3) {
+              format = 'Jokowi - JK';
+            } else {
+              format = '';
+            }
+          } else if (column === 'Selisih Suara (%)') {
+            format = x + '%';
           } else {
             format = (+x / 1000000) + 'jt';
           }
@@ -528,15 +646,30 @@ function initProvinces(err, pilpresProvinces1, provinces1) {
       .attr('x', function(d) { return d; })
       .attr('height', 8)
       .attr('width', 1)
-      .style('fill', function(d) { return color(x.invert(d)); })
+      .style('fill', function(d) {
+        if (column === 'Pasangan yang Unggul') {
+          var data = d > extentLegend[0] + ((extentLegend[1] - extentLegend[0]) / 2) ? 'Crimson' : 'DarkOrange';
+          return data;
+        } else {
+          return color(x.invert(d));
+        }
+      });
 
     g.call(d3.axisBottom(x)
-      .ticks(9)
+      .ticks(4)
       .tickSize(13)
       .tickFormat(function(x) {
         var format;
-        if (column === 'Selisih Suara (%)') {
-          format = x + ' %';
+        if (column === 'Pasangan yang Unggul') {
+          if (x === 1) {
+            format = 'Prabowo - Hatta';
+          } else if (x === 3) {
+            format = 'Jokowi - JK';
+          } else {
+            format = '';
+          }
+        } else if (column === 'Selisih Suara (%)') {
+          format = x + '%';
         } else {
           format = (+x / 1000000) + 'jt';
         }
@@ -546,16 +679,6 @@ function initProvinces(err, pilpresProvinces1, provinces1) {
       .select('.domain')
       .remove();
   }
-  /*
-  g.append('text')
-    .attr('class', 'caption')
-    .attr('x', x.range()[0])
-    .attr('y', 60)
-    .attr('fill', '#000')
-    .attr('text-anchor', 'start')
-    .attr('font-weignt', 'bold')
-    .text(`${title}: Indonesia`);
-  */
 
   average = averageProvinces[columnIdx];
 
@@ -577,40 +700,40 @@ function initProvinces(err, pilpresProvinces1, provinces1) {
       if (!mapProvinces.get(key)) {
         // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
       }
-
-      return color(d[column] = +mapProvinces.get(key)[column]);
-    })
-    .attr('d', path)
-    .on('click', handleOnClick);
-  /*
-  g.append('g')
-    .attr('id', 'regencies')
-    .selectAll('path')
-    .data(topojson.feature(regencies, regencies.objects.regencies).features)
-    .enter().append('path')
-    .attr('class', 'regency')
-    .attr('fill', function(d) {
-      var key = d.properties.name;
-      key = d.properties.nameAlt ? d.properties.nameAlt: key;
-      if (!mapProvinces.get(key)) {
-        key = d.properties.name;
-        // console.log(`${d.properties.province} - ${key}: `, d.properties.nameAlt);
+      if (column === 'Pasangan yang Unggul') {
+        var data = mapProvinces.get(key)[column];
+        d[column] = data === 'H. Prabowo Subianto - Ir. M. H. Hatta Rajasa' ? 'DarkOrange' : 'Crimson';
+        return d[column];
+      } else {
+        d[column] = +mapProvinces.get(key)[column];
+        return color(d[column]);
       }
-
-      return color(d[column] = +mapProvinces.get(key)[column]);
     })
     .attr('d', path)
-    // .text(function(d) { return d[column] + '%'; })
     .on('click', handleOnClick)
+    .on('mouseover', function(d) {
+      var html = getName(d);
+      for (var i=0; i<columns.length; i++) {
+        var column1 = columns[i];
+        html += `<br />${titles[i]}: ${getData(d, column1)}`;
+      }
+      return tooltip.style('visibility', 'visible').html(html);
+    })
+    .on('mousemove', function(d) {
+      var html = getName(d);
+      for (var i=0; i<columns.length; i++) {
+        var column1 = columns[i];
+        html += `<br />${titles[i]}: ${getData(d, column1)}`;
+      }
+      return tooltip.style('top', (d3.event.pageY - 10) + 'px')
+        .style('left', (d3.event.pageX + 10) + 'px')
+        .html(html);
+    })
+    .on('mouseout', function(d) {
+      return tooltip.style('visibility', 'hidden');
+    })
   ;
 
-  g.append('path')
-    .datum(topojson.mesh(regencies, regencies.objects.regencies), function(a, b) {
-      return a !== b;
-    })
-    .attr('id', 'regency-borders')
-    .attr('d', path);
-  */
   g.append('path')
     .datum(topojson.mesh(provinces, provinces.objects.provinces), function(a, b) {
       return a !== b;
@@ -663,12 +786,25 @@ function getName(region) {
   return name;
 }
 
-function getData(region) {
+function getData(region, column1) {
   var map = mapIdx > 0 ? mapRegencies : mapProvinces;
   var key = region.properties.name;
-  if (map.get(key)) { return (+map.get(key)[column]); }
+  var column2 = column1 ? column1 : column;
+  if (map.get(key)) {
+    if (column === 'Pasangan yang Unggul') {
+      return (map.get(key)[column2]);
+    } else {
+      return (+map.get(key)[column2]);
+    }
+  }
   key = region.properties.nameAlt;
-  if (map.get(key)) { return (+map.get(key)[column]); }
+  if (map.get(key)) {
+    if (column === 'Pasangan yang Unggul') {
+      return (map.get(key)[column]);
+    } else {
+      return (+map.get(key)[column]);
+    }
+  }
   return 'no data';
 }
 
