@@ -71,6 +71,8 @@ function initRegencies(err, pilpresRegencies1, regencies1) {
         averageRegencies[i] = 'Ir. H. Joko Widodo - Drs. H. M. Jusuf Kalla';
       } else if (column1 === 'Selisih Suara (%)') {
         averageRegencies[i] = (averageRegencies[i + 1] / averageRegencies[i + 2]) * 100;
+      } else if (column1 === 'Jumlah Tidak Memilih dan Suara Tidak Sah (%)') {
+        averageRegencies[i] = (averageRegencies[i - 1] / averageRegencies[i - 2]) * 100;
       }
     }
 
@@ -119,7 +121,8 @@ function initRegencies(err, pilpresRegencies1, regencies1) {
             } else {
               format = '';
             }
-          } else if (column === 'Selisih Suara (%)') {
+          } else if (column === 'Selisih Suara (%)' ||
+            column === 'Jumlah Tidak Memilih dan Suara Tidak Sah (%)') {
             format = x + '%';
           } else {
             format = (+x / 1000000) + 'jt';
@@ -159,7 +162,8 @@ function initRegencies(err, pilpresRegencies1, regencies1) {
           } else {
             format = '';
           }
-        } else if (column === 'Selisih Suara (%)') {
+        } else if (column === 'Selisih Suara (%)' ||
+          column === 'Jumlah Tidak Memilih dan Suara Tidak Sah (%)') {
           format = x + '%';
         } else {
           format = (+x / 1000000) + 'jt';
@@ -324,7 +328,8 @@ var columns = [
   'Selisih Suara',
   'Jumlah Suara Sah Calon Presiden dan Wakil Presiden',
   '5. Jumlah Pemilih (1+2+3+4+5) (JML)',
-  'Jumlah Tidak Memilih dan Suara Tidak Sah'
+  'Jumlah Tidak Memilih dan Suara Tidak Sah',
+  'Jumlah Tidak Memilih dan Suara Tidak Sah (%)',
 ];
 
 var interpolators = [
@@ -334,10 +339,7 @@ var interpolators = [
   'interpolateBlues',
   'interpolatePurples',
   'interpolateOranges',
-  'interpolateRdBu',
-  'interpolateGnBu',
-  'interpolateRdYlBu',
-  'interpolateSpectral',
+  'interpolateOranges',
 ];
 
 var titles = [
@@ -346,7 +348,8 @@ var titles = [
   'Selisih Suara',
   'Jumlah Suara Sah',
   'Jumlah DPT',
-  'Jumlah GolPut'
+  'Jumlah GolPut',
+  'Jumlah GolPut (%)',
 ];
 
 d3.select('#columns')
@@ -443,7 +446,8 @@ function handleColumnsOnChange() {
           } else {
             format = '';
           }
-        } else if (column === 'Selisih Suara (%)') {
+        } else if (column === 'Selisih Suara (%)' ||
+          column === 'Jumlah Tidak Memilih dan Suara Tidak Sah (%)') {
           format = x + '%';
         } else {
           format = (+x / 1000000) + 'jt';
@@ -581,6 +585,8 @@ function initProvinces(err, pilpresProvinces1, provinces1) {
         averageProvinces[i] = 'Ir. H. Joko Widodo - Drs. H. M. Jusuf Kalla';
       } else if (column1 === 'Selisih Suara (%)') {
         averageProvinces[i] = (averageProvinces[i + 1] / averageProvinces[i + 2]) * 100;
+      } else if (column1 === 'Jumlah Tidak Memilih dan Suara Tidak Sah (%)') {
+        averageProvinces[i] = (averageProvinces[i - 1] / averageProvinces[i - 2]) * 100;
       }
     }
 
@@ -628,7 +634,8 @@ function initProvinces(err, pilpresProvinces1, provinces1) {
             } else {
               format = '';
             }
-          } else if (column === 'Selisih Suara (%)') {
+          } else if (column === 'Selisih Suara (%)' ||
+            column === 'Jumlah Tidak Memilih dan Suara Tidak Sah (%)') {
             format = x + '%';
           } else {
             format = (+x / 1000000) + 'jt';
@@ -668,7 +675,8 @@ function initProvinces(err, pilpresProvinces1, provinces1) {
           } else {
             format = '';
           }
-        } else if (column === 'Selisih Suara (%)') {
+        } else if (column === 'Selisih Suara (%)' ||
+          column === 'Jumlah Tidak Memilih dan Suara Tidak Sah (%)') {
           format = x + '%';
         } else {
           format = (+x / 1000000) + 'jt';
@@ -791,7 +799,7 @@ function getData(region, column1) {
   var key = region.properties.name;
   var column2 = column1 ? column1 : column;
   if (map.get(key)) {
-    if (column === 'Pasangan yang Unggul') {
+    if (column2 === 'Pasangan yang Unggul') {
       return (map.get(key)[column2]);
     } else {
       return (+map.get(key)[column2]);
